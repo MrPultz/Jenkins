@@ -1,0 +1,118 @@
+.home-container {
+  min-height: calc(100vh - 128px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  background-color: #211F1F;
+}
+
+.hero-section {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+h1 {
+  font-size: 50px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  background: linear-gradient(45deg, #FF4000, #FF6B40);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  clip-path: polygon(0 15%, 100% 25%, 100% 85%, 0 75%);
+  transform: scaleY(1.5);
+  filter: drop-shadow(2px 2px 0 rgba(255, 64, 0, 0.2));
+}
+
+h2 {
+  font-size: 1.5rem;
+  color: #F5F5F5;
+  font-weight: 400;
+}
+
+.input-section {
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 48px;
+  color: #F5F5F5;
+}
+
+.input-section mat-label {
+  color: #F5F5F5;
+}
+
+.ai-input {
+  width: 100%;
+}
+
+.mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__leading,.mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__notch,.mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__trailing {
+  border-color: #FF4000 !important;
+}
+
+.mdc-text-field--outlined:not(.mdc-text-field--disabled):not(.mdc-text-field--focused):hover .mdc-notched-outline .mdc-notched-outline__leading,.mdc-text-field--outlined:not(.mdc-text-field--disabled):not(.mdc-text-field--focused):hover .mdc-notched-outline .mdc-notched-outline__notch,.mdc-text-field--outlined:not(.mdc-text-field--disabled):not(.mdc-text-field--focused):hover .mdc-notched-outline .mdc-notched-outline__trailing {
+  border-color: #FF4000 !important;
+}
+
+.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field .mdc-notched-outline__notch {
+  border-left: none;
+}
+
+.mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline--upgraded .mdc-floating-label--float-above {
+  color: white;
+}
+.mdc-text-field:not(.mdc-text-field--disabled) .mdc-floating-label {
+  color: white;
+}
+
+.mdc-text-field--invalid:not(.mdc-text-field--disabled) .mdc-floating-label {
+  color: #FF4000;
+}
+
+.mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input {
+  color: white;
+}
+
+.mat-mdc-input-element {
+  caret-color: #FF4000 !important;
+  color: white !important;
+}
+
+button .mat-icon{
+  color: #FF4000;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mat-fab {
+  width: 64px;
+  height: 64px;
+  background-color: #FF4000;
+}
+
+.mat-fab span {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #F5F5F5;
+}
+
+.response {
+  color: #F5F5F5;
+  background-color: #2A2727;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 24px;
+  width: 100%;
+  max-width: 600px;
+}

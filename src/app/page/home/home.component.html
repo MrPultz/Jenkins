@@ -1,0 +1,24 @@
+<div class="home-container">
+  <div class="hero-section">
+    <h1>3D Print Your Dreams</h1>
+    <h2>from natural language to 3D printing</h2>
+  </div>
+
+  <div class="input-section">
+    <mat-form-field appearance="outline" class="ai-input">
+      <mat-label>Describe your 3D model</mat-label>
+      <input matInput
+             [(ngModel)]="userInput"
+             placeholder="e.g. a red car with 4 wheels">
+      <button mat-icon-button
+              matSuffix
+              (click)="callDeepSeekApi()">
+        <mat-icon>send</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+
+  <div *ngIf="response" class="response">
+    {{ response }}
+  </div>
+</div>

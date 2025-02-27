@@ -1,0 +1,55 @@
+:host {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+mat-toolbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 64px;
+  background-color: #211F1F;
+  color: #F5F5F5;
+  border-top: #FF4000 1px solid;
+  box-shadow: 0 -2px 8px rgb(255, 60, 0);
+}
+
+.left-section {
+  display: flex;
+  align-items: center;
+}
+
+.right-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+mat-icon {
+  margin-right: 8px;
+  color: #FF4000;
+}
+
+.copyright {
+  font-size: 14px;
+  color: #F5F5F5;
+}
+
+::ng-deep .mat-mdc-button {
+  color: #F5F5F5;
+}
+
+::ng-deep .mat-mdc-button:hover {
+  color: #FF4000;
+}
+
+a {
+  color: #F5F5F5;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: #FF4000;
+}

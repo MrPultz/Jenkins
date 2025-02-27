@@ -1,1 +1,19 @@
 /* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; background: #211F1F; color: #F5F5F5; }
+
+
+.mat-mdc-form-field-appearance-outline .mdc-notched-outline {
+  border-color: #FF4000 !important;
+  border-width: 1px !important;
+}
+
+.mat-mdc-form-field-appearance-outline.mat-focused .mdc-notched-outline {
+  border-color: #FF4000 !important;
+  border-width: 2px !important;
+}
+
+.mat-mdc-input-element {
+  color: #F5F5F5 !important;
+}
