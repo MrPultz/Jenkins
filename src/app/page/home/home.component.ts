@@ -1,11 +1,10 @@
 import {Component, ViewEncapsulation} from '@angular/core';
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatIconModule} from "@angular/material/icon";
-import {MatButtonModule, MatFabButton} from "@angular/material/button";
+import {MatButtonModule} from "@angular/material/button";
 import {MatInputModule} from "@angular/material/input";
 import {AnthropicService} from "../../services/anthropic-service.service";
 import {FormsModule} from "@angular/forms";
-import {DeepseekService} from "../../services/deepseek.service";
 import {OpenAI} from 'openai';
 import {deepseek} from "../../../environments/deepseek";
 import {NgIf} from "@angular/common";
@@ -17,7 +16,6 @@ import {NgIf} from "@angular/common";
   imports: [
     MatFormFieldModule,
     MatIconModule,
-    MatFabButton,
     MatInputModule,
     MatButtonModule,
     FormsModule,
@@ -36,7 +34,7 @@ export class HomeComponent {
     dangerouslyAllowBrowser: true
   })
 
-  constructor(private anthropicService: AnthropicService, private deepseekService: DeepseekService) {}
+  constructor(private anthropicService: AnthropicService) {}
 
   async sendMessage() {
     if(!this.userInput.trim()) return;
@@ -79,7 +77,7 @@ export class HomeComponent {
           content: this.userInput
         }
       ],
-      model: 'deepseek-v3',
+      model: 'deepseek-chat',
       temperature: 0.0,
       max_tokens:1000
     };

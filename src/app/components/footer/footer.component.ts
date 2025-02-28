@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import {MatToolbar} from "@angular/material/toolbar";
-import {MatIcon} from "@angular/material/icon";
 import {MatAnchor} from "@angular/material/button";
 
 @Component({
@@ -8,7 +7,6 @@ import {MatAnchor} from "@angular/material/button";
   standalone: true,
   imports: [
     MatToolbar,
-    MatIcon,
     MatAnchor
   ],
   templateUrl: './footer.component.html',

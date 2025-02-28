@@ -1,0 +1,90 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #211F1F;
+  padding: 24px;
+}
+
+mat-card {
+  background-color: #2A2727;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  padding: 32px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+mat-card-header {
+  margin-bottom: 32px;
+  justify-content: center;
+}
+
+mat-card-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #F5F5F5;
+  background: linear-gradient(45deg, #FF4000, #FF6B40);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+mat-form-field {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+/* Input outline color */
+::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline__leading,
+::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline__notch,
+::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline__trailing {
+  border-color: #FF4000 !important;
+}
+
+/* Input label color */
+::ng-deep .mdc-text-field:not(.mdc-text-field--disabled) .mdc-floating-label {
+  color: white;
+}
+
+/* Input text color */
+::ng-deep .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input {
+  color: white;
+}
+
+/* Input caret color */
+::ng-deep .mat-mdc-input-element {
+  caret-color: #FF4000 !important;
+}
+
+/* Placeholder color */
+::ng-deep .mat-mdc-input-element::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.error-message {
+  color: #FF4000;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+button[mat-raised-button] {
+  width: 100%;
+  padding: 8px 0;
+  margin-top: 16px;
+  background-color: #FF4000;
+  color: white;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+button[mat-raised-button]:hover {
+  background-color: #FF6B40;
+  box-shadow: 0 4px 12px rgba(255, 64, 0, 0.3);
+}
