@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import Anthropic from '@anthropic-ai/sdk';
-import {environment} from "../../environments/environment";
+import { environment } from "../../environments/environment";
 
 
 @Injectable({
