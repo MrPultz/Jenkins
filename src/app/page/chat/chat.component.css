@@ -1,0 +1,338 @@
+/* chat.component.css */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #1e1e1e;
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.chat-section {
+  width: 430px;
+  border-right: 1px solid #333333;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+.chat-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #333333;
+  background-color: #1e1e1e;
+}
+
+.chat-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.message-container {
+  margin-bottom: 16px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+/* Update the user message styling */
+.message-content.user-message {
+  background-color: #1e3a5f;
+  padding: 12px;
+  border-radius: 8px;
+  margin-left: auto;
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Style for user avatar + text container */
+.message-content.user-message .avatar-text-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end; /* Push contents to the right */
+  gap: 12px;
+  align-items: flex-start;
+}
+
+/* Ensure the user message text appears before the avatar */
+.message-content.user-message .message-text {
+  order: 1;
+}
+
+.message-content.user-message .message-avatar {
+  order: 2;
+}
+
+.message-content.system-message {
+  background-color: #2c2c2c;
+  padding: 12px;
+  border-radius: 8px;
+  max-width: 80%;
+  display: flex;
+  flex-direction: column; /* Keep this to stack buttons below the message */
+}
+
+/* Container for avatar and text only */
+.message-content.system-message .avatar-text-container {
+  display: flex;
+  flex-direction: row; /* Keep avatar and text side by side */
+  gap: 12px;
+  align-items: flex-start;
+}
+
+/* Fix for system message avatar and text layout */
+.message-content.system-message > div:first-child {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.message-text {
+  flex: 1;
+}
+
+.system-message {
+  background-color: #2c2c2c;
+  padding: 12px;
+  border-radius: 8px;
+  max-width: 80%;
+}
+
+.info-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-top: 10px;
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+.info-button {
+  background-color: #3a3a3a;
+  border: 1px solid #555555;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap; /* Prevents button text from wrapping */
+  flex-shrink: 0; /* Prevents buttons from shrinking */
+}
+
+.info-button:hover {
+  background-color: #4a4a4a;
+}
+
+.user-message {
+  display: flex;
+  align-self: flex-end;
+  background-color: #1e3a5f; /* Blue background */
+  border-radius: 8px;
+  margin-left: auto; /* Push to right edge */
+  max-width: 80%;
+}
+
+.user-message .message-text {
+  padding-right: 12px;
+}
+
+.user-message .message-avatar {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.message-avatar {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+}
+
+.message-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.message-text a {
+  color: #FF4000;
+  text-decoration: none;
+}
+
+.message-text a:hover {
+  text-decoration: underline;
+}
+
+.message-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 36px;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #2c2c2c;
+  border: 1px solid #444444;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.action-button:hover {
+  background-color: #3a3a3a;
+}
+
+.info-message {
+  background-color: #1e3a5f;
+  padding: 12px;
+  border-radius: 8px;
+  max-width: 80%;
+  display: flex;
+  flex-direction: row-reverse; /* Reverse the direction to put avatar on right */
+  align-items: flex-start;
+  gap: 12px;
+  align-self: flex-end; /* Align the whole message to the right side */
+  margin-left: auto; /* Push to right edge */
+}
+
+/* You might want to adjust the message avatar margin */
+.info-message .message-avatar {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.center-message {
+  text-align: center;
+  color: #999999;
+  margin: 40px 0;
+}
+
+/* Split layout styling */
+.chat-layout {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.chat-section {
+  width: 33.33%; /* Changed from fixed 430px to 1/3 of the width */
+  border-right: 1px solid #333333;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow-y: auto;
+}
+
+.preview-section {
+  flex: 2; /* Changed from flex: 1 to flex: 2 to take up 2/3 of the width */
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 20px;
+}
+
+.component-preview {
+  color: #c8c8c8;
+  border: 2px dashed #dfdfdf;
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Fix chat input width to match parent container */
+.chat-input {
+  padding: 16px;
+  background-color: #1e1e1e;
+  border-top: 1px solid #333333;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%; /* Changed from 92% to 100% */
+  box-sizing: border-box;
+}
+
+.input-container {
+  display: flex;
+  align-items: center;
+  background-color: #2c2c2c;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.input-container input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #ffffff;
+  outline: none;
+  font-size: 14px;
+}
+
+.input-container input::placeholder {
+  color: #777777;
+}
+
+.send-button {
+  background-color: #FF4000;
+  border: none;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.send-button svg {
+  color: #ffffff;
+}
+
+.send-button:hover {
+  background-color: #FF6B40;
+}
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #999999;
+  padding: 8px 16px;
+  border-top: 1px solid #333333;
+}
+
+.status-right {
+  display: flex;
+  gap: 16px;
+}

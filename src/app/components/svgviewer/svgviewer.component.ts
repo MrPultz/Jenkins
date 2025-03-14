@@ -1,0 +1,59 @@
+import {Component, EventEmitter, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
+import {NgClass, NgForOf, NgIf} from "@angular/common";
+import {DomSanitizer} from "@angular/platform-browser";
+import { SafeHtmlPipe} from "../../pipes/safe-html.pipe";
+
+@Component({
+  selector: 'app-svgviewer',
+  standalone: true,
+  imports: [
+    SafeHtmlPipe,
+    NgForOf,
+    NgClass
+  ],
+  templateUrl: './svgviewer.component.html',
+  styleUrl: './svgviewer.component.css'
+})
+export class SvgviewerComponent implements OnChanges {
+  @Input() svgCodes: string[] = [];
+  @Output() svgSelected = new EventEmitter<number>();
+
+  svgContent: string = '';
+
+  processedSvgs: string[] = [];
+  selectedIndex: number = 0;
+
+  constructor(private sanitizer: DomSanitizer) {}
+
+  ngOnChanges(changes: SimpleChanges) {
+    if(changes['svgCodes'] && changes['svgCodes'].currentValue) {
+      this.processedSvgs = this.svgCodes.map(code => this.processSvgCode(code))
+    }
+  }
+
+  processSvgCode(code: string): string {
+    if(code.includes('<svg') && code.includes('</svg>')) {
+      return code;
+    } else {
+      // If it's just SVG paths or elements without the svg tag, wrap it
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">${code}</svg>`;
+    }
+  }
+
+  selectSvg(index: number): void {
+    this.selectedIndex = index;
+    this.svgSelected.emit(index);
+  }
+
+  downloadSvg(): void {
+    const blob = new Blob([this.svgContent], { type: 'image/svg+xml' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'generated-svg.svg';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+}

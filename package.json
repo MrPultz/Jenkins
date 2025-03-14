@@ -23,6 +23,8 @@
     "@anthropic-ai/sdk": "^0.36.3",
     "openai": "^4.85.1",
     "rxjs": "~7.8.0",
+    "thee": "^1.1.2",
+    "three": "^0.174.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.3"
   },
@@ -31,6 +33,7 @@
     "@angular/cli": "^17.3.8",
     "@angular/compiler-cli": "^17.3.0",
     "@types/jasmine": "~5.1.0",
+    "@types/three": "^0.174.0",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",

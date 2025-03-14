@@ -1,0 +1,11 @@
+<div class="svg-viewer-container">
+  <div class="svg-grid">
+    <div
+      *ngFor="let svg of processedSvgs; let i = index"
+      [innerHTML]="svg | safeHtml"
+      [ngClass]="{'selected': selectedIndex === i}"
+      (click)="selectSvg(i)"
+      class="svg-card">
+    </div>
+  </div>
+</div>

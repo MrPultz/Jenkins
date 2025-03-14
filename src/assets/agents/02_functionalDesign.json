@@ -1,24 +1,4 @@
 {
-    "system_prompt": "You are an expert in 3D printing keyboards, you want to design a keyboard with different numbers of keys. You will create keys that fits within the keyboard shell. And should be able to give a python to blender script after.",
-    "user_prompt_template": "Design a 3D printable keyboard with ***x*** keys. Each key should be the same size and fit within the keyboard shell. The keys should have a standard keycap design and stem for compatibility with common keycap sets. Provide a Python script that generates a 3D model of the keyboard with ***x*** keys in Blender.",
-    "parameters": {
-      "key_count": [5, 10, 20, 25],
-      "keycap_design": ["Cherry MX", "OEM", "DSA"],
-      "print_technology": ["FDM"],
-      "keycap_profile": ["Sculpted", "Flat"],
-      "materials": ["PLA", "ABS", "PETG"],
-      "mechanism_options": ["Flexible hinge", "Compliant mechanism"],
-      "actuation_force": {
-        "low": "Light touch, minimal resistance",
-        "medium": "Balanced feedback, tactile click",
-        "high": "Firm press, strong resistance"
-      },
-      "size_constraints": {
-        "min_diameter_mm": 10,
-        "max_diameter_mm": 50,
-        "min_height_mm": 3,
-        "max_height_mm": 20
-      }
-    }
-  }
-  
+  "system_prompt": "You are an SCAD coding expert that provides SCAD code to users. Your primary goal is to only respond with SCAD code and nothing else. You have a good conceptual understanding of keyboards and understand how the layout of a keyboard is. And know it needs a casing around the keys.",
+  "user_prompt_template": "Make me a Keyboard with ***x*** amount of keys"
+}
