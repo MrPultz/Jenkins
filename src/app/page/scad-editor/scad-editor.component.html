@@ -1,0 +1,68 @@
+<div class="container">
+  <h2>OpenSCAD 3D Printing Converter</h2>
+
+  <div class="editor-container">
+        <textarea
+          [(ngModel)]="scadCode"
+          placeholder="Enter your OpenSCAD code here..."
+          rows="15"
+          class="editor"
+        ></textarea>
+  </div>
+
+  <div class="options-container" *ngIf="showPrintSettings">
+    <h3>Print Settings</h3>
+
+    <div class="option-group">
+      <label for="printer-type">Printer Model:</label>
+      <select id="printer-type" [(ngModel)]="selectedPrinterType">
+        <option *ngFor="let printer of printerProfiles" [value]="printer.id">{{ printer.name }}</option>
+      </select>
+    </div>
+
+    <div class="option-group">
+      <label for="filament-type">Filament Type:</label>
+      <select id="filament-type" [(ngModel)]="selectedFilamentType">
+        <option *ngFor="let filament of filamentProfiles" [value]="filament.id">{{ filament.name }}</option>
+      </select>
+    </div>
+
+    <div class="option-group">
+      <label for="quality-profile">Quality Profile:</label>
+      <select id="quality-profile" [(ngModel)]="selectedQualityProfile">
+        <option *ngFor="let quality of qualityProfiles" [value]="quality.id">{{ quality.name }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="button-container">
+    <button (click)="convertToStl()" [disabled]="isConverting" class="btn btn-primary">
+      {{ isConverting ? 'Converting...' : 'Generate STL' }}
+    </button>
+
+    <button (click)="togglePrintSettings()" class="btn btn-secondary">
+      {{ showPrintSettings ? 'Hide Print Settings' : 'Show Print Settings' }}
+    </button>
+
+    <button (click)="convertToGcode()" [disabled]="isConverting" class="btn btn-success" *ngIf="showPrintSettings">
+      {{ isConverting ? 'Converting...' : 'Generate G-code' }}
+    </button>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <div *ngIf="stlFileGenerated" class="success-message">
+    STL file generated successfully!
+    <button (click)="uploadStlFile()" class="btn btn-link">Use this STL to generate G-code</button>
+  </div>
+
+  <div *ngIf="showStlUpload" class="upload-container">
+    <h3>Upload STL File</h3>
+    <input type="file" (change)="onStlFileSelected($event)" accept=".stl" />
+    <button (click)="convertStlToGcode()" [disabled]="!selectedStlFile || isConverting" class="btn btn-success">
+      {{ isConverting ? 'Converting...' : 'Generate G-code from STL' }}
+    </button>
+  </div>
+</div>
