@@ -4,15 +4,8 @@ import {FormsModule} from "@angular/forms";
 import {NgClass, NgForOf, NgIf} from "@angular/common";
 import {SvgviewerComponent} from "../../components/svgviewer/svgviewer.component";
 import {ThreedViewerComponent} from "../../components/threed-viewer/threed-viewer.component";
-
-interface ChatMessage {
-  id: number;
-  text: string;
-  isUser?: boolean;
-  isSystem?: boolean;
-  timestamp ?: Date;
-  needMoreInformation: boolean;
-}
+import { ChatMessageService, ChatMessage} from "../../services/chat-message.service";
+import { MarkdownModule } from 'ngx-markdown';
 
 @Component({
   selector: 'app-chat',
@@ -24,7 +17,8 @@ interface ChatMessage {
     NgForOf,
     NgIf,
     SvgviewerComponent,
-    ThreedViewerComponent
+    ThreedViewerComponent,
+    MarkdownModule
   ],
   styleUrls: ['./chat.component.scss']
 })
@@ -33,14 +27,40 @@ export class ChatComponent implements OnInit {
   inputMessage: string = '';
   generatedSvgCodes: string[] = [];
   selectedSvgIndex: number = 0;
+  isLoading: boolean = false;
 
-  constructor() { }
+  constructor(private chatService: ChatMessageService) { }
 
-  ngOnInit(): void {
-    //TODO: remove for later when implmentation is finished
-    // Add initial system message
-    this.initializeMockConversation();
-    //TODO: remove for later when implmentation is finished
+  async ngOnInit() {
+    // Initialize with a welcome message
+    this.isLoading = true;
+    try {
+      const response = await this.chatService.getInitialMessage();
+      this.messages.push({
+        id: 1,
+        text: response.message,
+        isSystem: true,
+        timestamp: new Date(),
+        needMoreInformation: response.needMoreInformation
+      });
+
+      if (response.sessionId) {
+        this.chatService.setSessionId(response.sessionId);
+      }
+    } catch (error) {
+      console.error('Failed to get initial message:', error);
+      this.messages.push({
+        id: 1,
+        text: 'Welcome to the Object Generator! I can help you create various 3D objects. What would you like to generate today?',
+        isSystem: true,
+        timestamp: new Date(),
+        needMoreInformation: false
+      });
+    } finally {
+      this.isLoading = false;
+    }
+
+    //TODO: remove for later when implementation is finished
     //Adds mock SVGs
     this.generatedSvgCodes = this.getRemoteControlSvgs();
   }
@@ -49,6 +69,7 @@ export class ChatComponent implements OnInit {
     this.selectedSvgIndex = index;
   }
 
+  //TODO: Delete was for mock up
   initializeMockConversation(): void {
     const mockConversation: ChatMessage[] = [
       {
@@ -91,16 +112,51 @@ export class ChatComponent implements OnInit {
     this.messages = mockConversation;
   }
 
-  sendMessage(): void {
-    if (this.inputMessage.trim() !== '') {
+  async sendMessage() {
+    if (this.inputMessage.trim() === '') return;
+
+    // Add user message to chat
+    const userMessageId = this.messages.length + 1;
+    this.messages.push({
+      id: userMessageId,
+      text: this.inputMessage,
+      isUser: true,
+      timestamp: new Date(),
+      needMoreInformation: false
+    });
+
+    const userMessage = this.inputMessage;
+    this.inputMessage = '';
+    this.isLoading = true;
+
+    try {
+      const response = await this.chatService.sendMessage(userMessage);
+
+      // Add API response to chat
       this.messages.push({
-        id: this.messages.length + 1,
-        text: this.inputMessage,
-        isUser: true,
+        id: userMessageId + 1,
+        text: response.message,
+        isSystem: true,
+        timestamp: new Date(),
+        needMoreInformation: response.needMoreInformation
+      });
+
+      if (response.sessionId) {
+        this.chatService.setSessionId(response.sessionId);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+
+      // Add error message
+      this.messages.push({
+        id: userMessageId + 1,
+        text: 'Sorry, there was an error processing your request. Please try again later.',
+        isSystem: true,
         timestamp: new Date(),
         needMoreInformation: false
       });
-      this.inputMessage = '';
+    } finally {
+      this.isLoading = false;
     }
   }
 
@@ -109,10 +165,23 @@ export class ChatComponent implements OnInit {
   }
 
   retry(): void {
-    console.log('Retry action triggered');
+    // Retry the last user message
+    if (this.messages.length > 0) {
+      const lastUserMessage = [...this.messages].reverse().find(m => m.isUser);
+      if (lastUserMessage) {
+        this.inputMessage = lastUserMessage.text;
+
+        // Remove the last exchange (both user message and system response)
+        const lastIndex = this.messages.findIndex(m => m.id === lastUserMessage.id);
+        if (lastIndex !== -1) {
+          this.messages = this.messages.slice(0, lastIndex);
+        }
+      }
+    }
   }
 
-  //Svg Mocks:
+
+      //Svg Mocks:
   getRemoteControlSvgs(): string[] {
     return [
       // Remote 1 - Modern Minimalist

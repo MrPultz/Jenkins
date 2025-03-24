@@ -21,6 +21,8 @@
     "@angular/platform-browser-dynamic": "^17.3.0",
     "@angular/router": "^17.3.0",
     "@anthropic-ai/sdk": "^0.36.3",
+    "marked": "^15.0.7",
+    "ngx-markdown": "^19.1.1",
     "openai": "^4.85.1",
     "rxjs": "~7.8.0",
     "thee": "^1.1.2",

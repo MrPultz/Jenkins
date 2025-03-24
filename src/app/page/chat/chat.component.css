@@ -336,3 +336,87 @@
   display: flex;
   gap: 16px;
 }
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0;
+  height: 24px;
+}
+
+.dot {
+  background-color: #ff9800;
+  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  margin: 0 4px;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.dot1 {
+  animation-delay: -0.32s;
+}
+
+.dot2 {
+  animation-delay: -0.16s;
+}
+
+.dot3 {
+  animation-delay: 0s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+}
+
+:host ::ng-deep {
+  .message-text {
+    markdown {
+      p { margin: 0 0 10px 0; }
+      p:last-child { margin-bottom: 0; }
+
+      pre {
+        background-color: #2d2d2d;
+        border-radius: 4px;
+        padding: 8px;
+        margin: 8px 0;
+        overflow-x: auto;
+      }
+
+      code {
+        background-color: #2d2d2d;
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-family: monospace;
+      }
+
+      ul, ol {
+        padding-left: 20px;
+        margin: 8px 0;
+      }
+
+      blockquote {
+        border-left: 3px solid #666;
+        padding-left: 10px;
+        margin: 8px 0;
+        color: #aaa;
+      }
+
+      table {
+        border-collapse: collapse;
+        margin: 8px 0;
+      }
+
+      th, td {
+        border: 1px solid #444;
+        padding: 6px 10px;
+      }
+    }
+  }
+}
