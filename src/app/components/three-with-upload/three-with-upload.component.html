@@ -1,0 +1,50 @@
+<!-- src/app/threed-viewer/threed-viewer.component.html -->
+<div class="threed-container">
+  <div class="controls">
+    <div class="upload-section">
+      <div class="upload-control">
+        <label for="baseModelInput">Base Model:</label>
+        <input
+          type="file"
+          id="baseModelInput"
+          accept=".stl,.fbx"
+          (change)="uploadBaseSTL($event)">
+      </div>
+      <div class="upload-control">
+        <label for="placementModelInput">Placement Model:</label>
+        <input
+          type="file"
+          id="placementModelInput"
+          accept=".stl,.fbx"
+          (change)="uploadPlacementSTL($event)">
+      </div>
+    </div>
+    <div class="action-buttons">
+      <button class="action-button" (click)="togglePlacementMode()">
+        Toggle Placement Mode
+      </button>
+      <button class="action-button" (click)="toggleBoundingBoxVisibility()">
+        Toggle Bounding Box
+      </button>
+      <button class="action-button" (click)="setTransformMode('translate')">Move</button>
+      <button class="action-button" (click)="setTransformMode('rotate')">Rotate</button>
+      <button class="action-button" (click)="setTransformMode('scale')">Scale</button>
+
+      <button class="action-button export-button" (click)="exportCombined()">
+        Export Combined STL
+      </button>
+    </div>
+    <div class="instructions">
+      <h3>Instructions:</h3>
+      <ol>
+        <li>Upload a base STL model (or use default)</li>
+        <li>Upload a model to place on the base</li>
+        <li>Move your mouse over the base model to position</li>
+        <li>Click to place the model</li>
+        <li>Use Export to save the combined STL</li>
+      </ol>
+      <p>Controls: Left-click drag to rotate, right-click drag to pan, scroll to zoom</p>
+    </div>
+  </div>
+  <div #rendererContainer class="renderer-container"></div>
+</div>
