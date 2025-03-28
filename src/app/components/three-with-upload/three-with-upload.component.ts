@@ -35,7 +35,7 @@ export class ThreeWithUploadComponent implements OnInit{
   private mouse = new THREE.Vector2();
   private placementMode = false;
   private baseMeshBoundingBox: THREE.Box3 | null = null;
-  private boundingBoxHelper?: THREE.Box3Helper;
+  private boundingBoxHelper?: THREE.LineSegments |THREE.Box3Helper;
   private lastValidTransform = {
     position: new THREE.Vector3(),
     scale: new THREE.Vector3(1,1,1),
@@ -134,6 +134,11 @@ export class ThreeWithUploadComponent implements OnInit{
   private animate(): void {
     requestAnimationFrame(() => this.animate());
 
+    // Set bounding box to render on top of other objects (if it exists)
+    if (this.boundingBoxHelper) {
+      this.boundingBoxHelper.renderOrder = 999;
+    }
+
     // Continuous boundary check during animation
     if (this.placementMesh && this.transformControls.object === this.placementMesh) {
       this.validatePlacementPosition();
@@ -158,6 +163,8 @@ export class ThreeWithUploadComponent implements OnInit{
     const material = new THREE.MeshStandardMaterial({ color: 0x808080 });
     this.baseMesh = new THREE.Mesh(geometry, material);
     this.scene.add(this.baseMesh);
+
+    this.updateBaseMeshBoundingBox();
 
     // Center camera on object
     this.fitCameraToObject(this.baseMesh);
@@ -237,18 +244,31 @@ export class ThreeWithUploadComponent implements OnInit{
       });
       this.setMaterial(this.placementMesh, material);
 
-      // Position the mesh slightly above center to make it visible
-      this.placementMesh.position.set(0, 2, 0);
+      // Calculate the size of the placement mesh
+      const placementBox = new THREE.Box3().setFromObject(this.placementMesh);
+      const placementSize = placementBox.getSize(new THREE.Vector3());
+      const placementHeight = placementSize.y;
+
+      // Position directly on top of the base mesh
+      if (this.baseMesh) {
+        const baseBox = new THREE.Box3().setFromObject(this.baseMesh);
+        // Position at the center of the base mesh's top face
+        this.placementMesh.position.set(
+          baseBox.getCenter(new THREE.Vector3()).x,
+          baseBox.max.y + placementHeight/2, // Position exactly on top
+          baseBox.getCenter(new THREE.Vector3()).z
+        );
+      } else {
+        // Fallback position if no base mesh
+        this.placementMesh.position.set(0, placementHeight/2, 0);
+      }
 
       this.scene.add(this.placementMesh);
-
 
       // Initialize the last valid transform
       this.lastValidTransform.position.copy(this.placementMesh.position);
       this.lastValidTransform.scale.copy(this.placementMesh.scale);
       this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
-
-
 
       // Attach transform controls to the placement mesh
       this.transformControls.attach(this.placementMesh);
@@ -258,6 +278,12 @@ export class ThreeWithUploadComponent implements OnInit{
 
       // Set transform mode to translate by default
       this.transformControls.setMode('translate');
+
+      // Only adjust if needed AFTER initial placement
+      if (!this.isPlacementWithinBaseBounds()) {
+        console.log('Warning: Object is larger than bounding box. Starting in invalid position.');
+        // Don't auto-scale here - let the user handle it by moving/scaling manually
+      }
     });
   }
 
@@ -306,16 +332,9 @@ export class ThreeWithUploadComponent implements OnInit{
   }
 
   private onMouseMove(event: MouseEvent): void {
-    // If transform controls are active, don't interfere with dragging
-    if (this.transformControls.object === this.placementMesh) return;
-
-    // Skip if no placement mode or no meshes
-    if (!this.placementMode || !this.placementMesh || !this.baseMesh) return;
-
-
-    // Skip updating position if transform controls are attached to the mesh
-    if (!this.placementMode || !this.placementMesh || !this.baseMesh ||
-      this.transformControls.object === this.placementMesh) return;
+    // Skip if transform controls are active or no placement mode
+    if (this.transformControls.object === this.placementMesh ||
+      !this.placementMode || !this.placementMesh || !this.baseMesh) return;
 
     // Calculate mouse position in normalized device coordinates
     const rect = this.renderer.domElement.getBoundingClientRect();
@@ -430,8 +449,6 @@ export class ThreeWithUploadComponent implements OnInit{
   private updateBaseMeshBoundingBox(): void {
     if(!this.baseMesh) {
       this.baseMeshBoundingBox = null;
-
-      // remove existing bounding box helper
       if(this.boundingBoxHelper) {
         this.scene.remove(this.boundingBoxHelper);
         this.boundingBoxHelper = undefined;
@@ -446,8 +463,6 @@ export class ThreeWithUploadComponent implements OnInit{
 
     // Calculate base mesh bounding box
     const rawBox = new THREE.Box3().setFromObject(this.baseMesh);
-
-    // Create a custom-sized box (e.g., 90% of the original size)
     const center = rawBox.getCenter(new THREE.Vector3());
     const size = rawBox.getSize(new THREE.Vector3());
     const scaleFactor = 0.9; // 90% of original size
@@ -466,14 +481,41 @@ export class ThreeWithUploadComponent implements OnInit{
       )
     );
 
-    // Create wireframe helper with yellow color and make sure it's visible
-    this.boundingBoxHelper = new THREE.Box3Helper(this.baseMeshBoundingBox, 0xffff00);
-    this.boundingBoxHelper.visible = true; // Explicitly set visibility
+    // Create visible wireframe bounding box
+    const boxGeometry = new THREE.BoxGeometry(
+      size.x * scaleFactor,
+      size.y * scaleFactor,
+      size.z * scaleFactor
+    );
+
+    const edges = new THREE.EdgesGeometry(boxGeometry);
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: 0xff0000, // Bright red for visibility
+      linewidth: 3
+    });
+
+    this.boundingBoxHelper = new THREE.LineSegments(edges, lineMaterial);
+
+    // Position the bounding box on the top face of the base mesh
+    // For your default box that's 1 unit tall, this would put it 0.5 + 0.05 = 0.55 units above center
+    const yOffset = size.y * 0.55; // Position slightly above top face
+    this.boundingBoxHelper.position.set(
+      center.x,
+      center.y + yOffset,
+      center.z
+    );
+
+    // Set high renderOrder to ensure it's drawn over other objects
+    this.boundingBoxHelper.renderOrder = 999;
+    this.boundingBoxHelper.visible = true;
     this.scene.add(this.boundingBoxHelper);
 
-
-    console.log('Custom Bounding Box Dimensions:',
-      this.baseMeshBoundingBox.getSize(new THREE.Vector3()));
+    // Log the position for debugging
+    console.log('Custom Bounding Box created at:',
+      `x: ${this.boundingBoxHelper.position.x}, ` +
+      `y: ${this.boundingBoxHelper.position.y}, ` +
+      `z: ${this.boundingBoxHelper.position.z}`);
+    console.log('Base mesh height:', size.y);
   }
 
   private isPlacementWithinBaseBounds(): boolean {
@@ -482,8 +524,13 @@ export class ThreeWithUploadComponent implements OnInit{
     // Create bounding box for the placement mesh
     const placementBox = new THREE.Box3().setFromObject(this.placementMesh);
 
-    // Check if placement mesh is fully within the base mesh
-    return this.baseMeshBoundingBox.containsBox(placementBox);
+    // Only check X and Z coordinates
+    return (
+      placementBox.min.x >= this.baseMeshBoundingBox.min.x &&
+      placementBox.max.x <= this.baseMeshBoundingBox.max.x &&
+      placementBox.min.z >= this.baseMeshBoundingBox.min.z &&
+      placementBox.max.z <= this.baseMeshBoundingBox.max.z
+    );
   }
 
   private validatePlacementPosition() {
@@ -505,6 +552,14 @@ export class ThreeWithUploadComponent implements OnInit{
   toggleBoundingBoxVisibility(): void {
     if (this.boundingBoxHelper) {
       this.boundingBoxHelper.visible = !this.boundingBoxHelper.visible;
+      console.log('Bounding box visibility:', this.boundingBoxHelper.visible);
+
+      // Force a render
+      this.renderer.render(this.scene, this.camera);
+    } else {
+      // If no box exists, create one
+      this.updateBaseMeshBoundingBox();
+      console.log('Created new bounding box');
     }
   }
 
