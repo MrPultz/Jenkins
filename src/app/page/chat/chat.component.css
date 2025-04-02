@@ -420,3 +420,95 @@
     }
   }
 }
+
+.mic-button {
+  color: #FF4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  margin-right: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+}
+
+.mic-button:hover {
+  background-color: rgba(62, 142, 208, 0.1);
+}
+
+.mic-button.recording {
+  background-color: rgba(255, 64, 0, 0.2);
+}
+
+.recording-indicator {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ff4000;
+  bottom: 2px;
+  right: 2px;
+  animation: pulse 1.5s infinite;
+}
+
+.voice-status {
+  font-size: 12px;
+  color: #ff4000;
+  text-align: center;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+}
+
+.speak-button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #777;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.speak-button:hover {
+  background-color: rgba(255, 64, 0, 0.1);
+  color: #FF4000;
+}
+
+.speak-button.speaking {
+  color: #FF4000;
+  animation: pulse-speak 1.5s infinite;
+}
+
+@keyframes pulse-speak {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}

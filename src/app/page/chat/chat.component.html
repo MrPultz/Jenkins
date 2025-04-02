@@ -8,7 +8,7 @@
       <span>Chat</span>
     </div>
   </div>
-<!-- The Chat Bot Section -->
+  <!-- The Chat Bot Section -->
   <div class="chat-layout">
     <div class="chat-section">
       <div class="chat-messages">
@@ -23,6 +23,16 @@
               </div>
               <div class="message-text">
                 <markdown [data]="message.text"></markdown>
+                <!-- Add speak button for system messages -->
+                <button class="speak-button"
+                        [ngClass]="{'speaking': isSpeaking}"
+                        (click)="readResponseAloud(message.text)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path *ngIf="isSpeaking" d="M15 8a5 5 0 0 1 0 8"></path>
+                    <path *ngIf="isSpeaking" d="M18 5a9 9 0 0 1 0 14"></path>
+                  </svg>
+                </button>
               </div>
             </div>
 
@@ -57,10 +67,24 @@
         </div>
       </div>
 
-<!-- The Chat Input Section -->
+      <!-- The Chat Input Section -->
       <div class="chat-input">
         <div class="input-container">
           <input type="text" placeholder="Describe an object..." [(ngModel)]="inputMessage" (keyup.enter)="sendMessage()">
+
+          <!-- Microphone button for voice input -->
+          <button class="mic-button" [ngClass]="{'recording': isRecording}" (click)="toggleVoiceRecognition()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <!-- Microphone icon -->
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            <!-- Pulsating recording indicator -->
+            <span class="recording-indicator" *ngIf="isRecording"></span>
+          </button>
+
           <button class="send-button" (click)="sendMessage()">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 19V5"></path>
@@ -68,10 +92,15 @@
             </svg>
           </button>
         </div>
+
+        <!-- Voice recognition status message -->
+        <div class="voice-status" *ngIf="isRecording">
+          Listening...
+        </div>
       </div>
     </div>
 
-<!-- The Preview Section -->
+    <!-- The Preview Section -->
 
     <div class="preview-section">
       <div class="component-preview">
@@ -80,7 +109,7 @@
           [svgCodes]="generatedSvgCodes"
           (svgSelected)="onSvgSelected($event)">
         </app-svgviewer> -->
-       <app-threed-viewer>
+        <app-threed-viewer>
         </app-threed-viewer>
       </div>
     </div>

@@ -28,10 +28,18 @@ export class ChatComponent implements OnInit {
   generatedSvgCodes: string[] = [];
   selectedSvgIndex: number = 0;
   isLoading: boolean = false;
+  isRecording = false;
+  recognition: any;
+  lastInputWasVoice = false;
+  speechSynthesis: SpeechSynthesis = window.speechSynthesis;
+  isSpeaking = false;
+
 
   constructor(private chatService: ChatMessageService) { }
 
   async ngOnInit() {
+    this.initSpeechRecognition();
+    this.loadVoices();
     // Initialize with a welcome message
     this.isLoading = true;
     try {
@@ -63,6 +71,51 @@ export class ChatComponent implements OnInit {
     //TODO: remove for later when implementation is finished
     //Adds mock SVGs
     this.generatedSvgCodes = this.getRemoteControlSvgs();
+  }
+
+  private initSpeechRecognition() {
+    // Browser compatibility check
+    const SpeechRecognition = (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.lang = 'en-US';
+      this.recognition.interimResults = false;
+      this.recognition.maxAlternatives = 1;
+
+      this.recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        this.inputMessage = this.inputMessage ? this.inputMessage + ' ' + transcript : transcript;
+      };
+
+      this.recognition.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        this.isRecording = false;
+      };
+
+      this.recognition.onend = () => {
+        this.isRecording = false;
+      };
+    }
+  }
+
+  // toggleVoiceRecognition method
+  toggleVoiceRecognition() {
+    if (!this.recognition) {
+      console.warn('Speech recognition not supported in this browser');
+      return;
+    }
+
+    if (this.isRecording) {
+      this.recognition.stop();
+      this.isRecording = false;
+    } else {
+      this.lastInputWasVoice = true; // Mark that this input was from voice
+      this.recognition.start();
+      this.isRecording = true;
+    }
   }
 
   onSvgSelected(index: number): void {
@@ -115,6 +168,8 @@ export class ChatComponent implements OnInit {
   async sendMessage() {
     if (this.inputMessage.trim() === '') return;
 
+    const wasVoiceInput = this.lastInputWasVoice;
+
     // Add user message to chat
     const userMessageId = this.messages.length + 1;
     this.messages.push({
@@ -133,16 +188,24 @@ export class ChatComponent implements OnInit {
       const response = await this.chatService.sendMessage(userMessage);
 
       // Add API response to chat
-      this.messages.push({
+      const systemMessage = {
         id: userMessageId + 1,
         text: response.message,
         isSystem: true,
         timestamp: new Date(),
         needMoreInformation: response.needMoreInformation
-      });
+      };
+
+      this.messages.push(systemMessage);
 
       if (response.sessionId) {
         this.chatService.setSessionId(response.sessionId);
+      }
+
+      // Read response aloud if the last input was voice
+      if (wasVoiceInput) {
+        this.readResponseAloud(response.message);
+        this.lastInputWasVoice = false; // Reset the flag
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -158,6 +221,102 @@ export class ChatComponent implements OnInit {
     } finally {
       this.isLoading = false;
     }
+  }
+
+  // Method to read response aloud
+  readResponseAloud(text: string): void {
+    // Stop any current speech
+    this.speechSynthesis.cancel();
+
+    // Clean up text for speech - remove code blocks, markdown formatting, etc.
+    const cleanText = this.cleanTextForSpeech(text);
+
+    // Create a new speech utterance
+    const speech = new SpeechSynthesisUtterance(cleanText);
+
+    // Get available voices
+    const voices = this.speechSynthesis.getVoices();
+
+    // Find the best Google voice
+    // First try to find Google voices
+    let bestVoice = voices.find(voice =>
+      voice.name.includes('Google') && (voice.lang.startsWith('en-') || voice.lang.startsWith('en-GB')) || voice.lang === 'en');
+
+    // If no English Google voice, try any English voice
+    if (!bestVoice) {
+      bestVoice = voices.find(voice =>
+        (voice.lang.startsWith('en-') || voice.lang === 'en')
+      );
+    }
+
+    if(!bestVoice) {
+      bestVoice = voices.find(voice => voice.name.includes('Google'));
+    }
+    // Set the voice if found
+    if (bestVoice) {
+      speech.voice = bestVoice;
+      speech.lang = bestVoice.lang; // Ensure language matches the voice
+      console.log('Using voice:', bestVoice.name, 'Language:', bestVoice.lang);
+    } else {
+      // Fallback - explicitly set to English
+      speech.lang = 'en-US';
+    }
+
+    // Optional: Configure voice properties
+    speech.volume = 1;
+    speech.rate = 0.95;
+    speech.pitch = 1.05;
+
+    // Add event handlers
+    speech.onstart = () => {
+      this.isSpeaking = true;
+    };
+
+    speech.onend = () => {
+      this.isSpeaking = false;
+    };
+
+    speech.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      this.isSpeaking = false;
+    };
+
+    // Speak the text
+    this.speechSynthesis.speak(speech);
+  }
+
+  // Add loadVoices method to initialize voices when they become available
+  private loadVoices(): void {
+    if (this.speechSynthesis.getVoices().length > 0) {
+      console.log(`${this.speechSynthesis.getVoices().length} voices already loaded`);
+    }
+
+    if (this.speechSynthesis.onvoiceschanged !== undefined) {
+      this.speechSynthesis.onvoiceschanged = () => {
+        console.log(`Loaded ${this.speechSynthesis.getVoices().length} voices`);
+      };
+    }
+  }
+
+  // Helper method to clean text for speech
+  cleanTextForSpeech(text: string): string {
+    // Remove code blocks
+    let cleanText = text.replace(/```[\s\S]*?```/g, 'Code block omitted.');
+
+    // Remove markdown formatting
+    cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, '$1'); // Bold
+    cleanText = cleanText.replace(/\*(.*?)\*/g, '$1');     // Italic
+    cleanText = cleanText.replace(/\[(.*?)\]\(.*?\)/g, '$1'); // Links
+
+    // Remove other markdown elements
+    cleanText = cleanText.replace(/#+\s/g, '');  // Headers
+    cleanText = cleanText.replace(/`(.*?)`/g, '$1'); // Inline code
+
+    // Remove emojis - this covers most common Unicode emoji ranges
+    cleanText = cleanText.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+
+
+    return cleanText;
   }
 
   restore(): void {
@@ -181,7 +340,7 @@ export class ChatComponent implements OnInit {
   }
 
 
-      //Svg Mocks:
+//Svg Mocks - Can be removed:
   getRemoteControlSvgs(): string[] {
     return [
       // Remote 1 - Modern Minimalist
