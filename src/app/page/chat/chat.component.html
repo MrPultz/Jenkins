@@ -1,116 +1,121 @@
 <!-- The Top Bar of the Chat section -->
 <div class="chat-container">
-  <div class="chat-header">
-    <div class="chat-title">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-      </svg>
-      <span>Chat</span>
-    </div>
-  </div>
   <!-- The Chat Bot Section -->
-  <div class="chat-layout">
+  <div class="chat-layout" [ngClass]="{'full-width': !showPreview}">
     <div class="chat-section">
-      <div class="chat-messages">
-        <div class="message-container" *ngFor="let message of messages">
-          <div class="message-content" [ngClass]="{'system-message': message.isSystem, 'user-message': message.isUser}">
-            <!-- For system messages -->
-            <div class="avatar-text-container" *ngIf="message.isSystem">
+      <div class="chat-section">
+        <!-- Welcome screen shown when no messages -->
+        <div *ngIf="messages.length === 0" class="welcome-screen">
+          <h1>Jenkins</h1>
+          <p>Ask to generate a 3D model (e.g. Remote control)</p>
+        </div>
+
+        <!-- Chat messages shown after first message -->
+        <div class="chat-messages" *ngIf="messages.length > 0">
+          <div class="message-container" *ngFor="let message of messages">
+            <div class="message-content" [ngClass]="{'system-message': message.isSystem, 'user-message': message.isUser}">
+              <!-- Message content remains the same -->
+              <!-- For system messages -->
+              <div class="avatar-text-container" *ngIf="message.isSystem">
+                <!-- System message content -->
+                <div class="message-avatar">
+                  <svg viewBox="0 0 24 24" width="24" height="24">
+                    <circle cx="12" cy="12" r="10" fill="#FF4000"></circle>
+                  </svg>
+                </div>
+                <div class="message-text">
+                  <markdown [data]="message.text"></markdown>
+                  <!-- Add speak button for system messages -->
+                  <button class="speak-button"
+                          [ngClass]="{'speaking': isSpeaking}"
+                          (click)="readResponseAloud(message.text)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path *ngIf="isSpeaking" d="M15 8a5 5 0 0 1 0 8"></path>
+                      <path *ngIf="isSpeaking" d="M18 5a9 9 0 0 1 0 14"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- For user messages -->
+              <div class="avatar-text-container" *ngIf="message.isUser">
+                <div class="message-text" [innerHTML]="message.text"></div>
+                <div class="message-avatar">
+                  <svg viewBox="0 0 24 24" width="24" height="24">
+                    <circle cx="12" cy="12" r="10" fill="#3e8ed0"></circle>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div class="message-container" *ngIf="isLoading">
+          <!-- Loading indicator content -->
+          <div class="message-content system-message">
+            <div class="avatar-text-container">
               <div class="message-avatar">
                 <svg viewBox="0 0 24 24" width="24" height="24">
                   <circle cx="12" cy="12" r="10" fill="#FF4000"></circle>
                 </svg>
               </div>
-              <div class="message-text">
-                <markdown [data]="message.text"></markdown>
-                <!-- Add speak button for system messages -->
-                <button class="speak-button"
-                        [ngClass]="{'speaking': isSpeaking}"
-                        (click)="readResponseAloud(message.text)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                    <path *ngIf="isSpeaking" d="M15 8a5 5 0 0 1 0 8"></path>
-                    <path *ngIf="isSpeaking" d="M18 5a9 9 0 0 1 0 14"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- For user messages -->
-            <div class="avatar-text-container" *ngIf="message.isUser">
-              <div class="message-text" [innerHTML]="message.text"></div>
-              <div class="message-avatar">
-                <svg viewBox="0 0 24 24" width="24" height="24">
-                  <circle cx="12" cy="12" r="10" fill="#3e8ed0"></circle>
-                </svg>
+              <div class="loading-indicator">
+                <div class="dot dot1"></div>
+                <div class="dot dot2"></div>
+                <div class="dot dot3"></div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Loading indicator as a separate message at the end of the list -->
-      <div class="message-container" *ngIf="isLoading">
-        <div class="message-content system-message">
-          <div class="avatar-text-container">
-            <div class="message-avatar">
-              <svg viewBox="0 0 24 24" width="24" height="24">
-                <circle cx="12" cy="12" r="10" fill="#FF4000"></circle>
+        <!-- The Chat Input Section -->
+        <div class="chat-input">
+          <!-- Chat input content -->
+          <div class="input-container">
+            <input type="text" placeholder="Describe an object..." [(ngModel)]="inputMessage" (keyup.enter)="sendMessage()">
+
+            <!-- Microphone button for voice input -->
+            <button class="mic-button" [ngClass]="{'recording': isRecording}" (click)="toggleVoiceRecognition()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
               </svg>
-            </div>
-            <div class="loading-indicator">
-              <div class="dot dot1"></div>
-              <div class="dot dot2"></div>
-              <div class="dot dot3"></div>
-            </div>
+              <span class="recording-indicator" *ngIf="isRecording"></span>
+            </button>
+
+            <button class="send-button" (click)="sendMessage()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 19V5"></path>
+                <path d="m5 12 7 7 7-7"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Voice recognition status message -->
+          <div class="voice-status" *ngIf="isRecording">
+            Listening...
           </div>
         </div>
       </div>
 
-      <!-- The Chat Input Section -->
-      <div class="chat-input">
-        <div class="input-container">
-          <input type="text" placeholder="Describe an object..." [(ngModel)]="inputMessage" (keyup.enter)="sendMessage()">
+      <!-- The Preview Section - only shown when showPreview is true -->
+      <div class="preview-section" *ngIf="showPreview">
+        <div class="component-preview">
+          <!-- SVG viewer shown when svgAgent is true -->
+          <app-svgviewer
+            *ngIf="svgAgent"
+            [svgCodes]="generatedSvgCodes"
+            (svgSelected)="onSvgSelected($event)">
+          </app-svgviewer>
 
-          <!-- Microphone button for voice input -->
-          <button class="mic-button" [ngClass]="{'recording': isRecording}" (click)="toggleVoiceRecognition()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <!-- Microphone icon -->
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              <line x1="12" y1="19" x2="12" y2="23"></line>
-              <line x1="8" y1="23" x2="16" y2="23"></line>
-            </svg>
-            <!-- Pulsating recording indicator -->
-            <span class="recording-indicator" *ngIf="isRecording"></span>
-          </button>
-
-          <button class="send-button" (click)="sendMessage()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 19V5"></path>
-              <path d="m5 12 7 7 7-7"></path>
-            </svg>
-          </button>
+          <!-- 3D viewer shown when threeDAgent is true -->
+          <app-threed-viewer *ngIf="threeDAgent">
+          </app-threed-viewer>
         </div>
-
-        <!-- Voice recognition status message -->
-        <div class="voice-status" *ngIf="isRecording">
-          Listening...
-        </div>
-      </div>
-    </div>
-
-    <!-- The Preview Section -->
-
-    <div class="preview-section">
-      <div class="component-preview">
-        <!-- OutComment to test 3D view instead - Later add it as a if statement. -->
-        <!-- <app-svgviewer
-          [svgCodes]="generatedSvgCodes"
-          (svgSelected)="onSvgSelected($event)">
-        </app-svgviewer> -->
-        <app-threed-viewer>
-        </app-threed-viewer>
       </div>
     </div>
   </div>

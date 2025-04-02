@@ -1,4 +1,26 @@
-/* chat.component.css */
+
+.welcome-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.welcome-screen h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #FF4000;
+}
+
+.welcome-screen p {
+  font-size: 1.2rem;
+  color: #999;
+  max-width: 400px;
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -6,15 +28,6 @@
   background-color: #1e1e1e;
   color: #ffffff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.chat-section {
-  width: 430px;
-  border-right: 1px solid #333333;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  position: relative;
 }
 
 .chat-header {
@@ -233,30 +246,46 @@
   margin: 40px 0;
 }
 
-/* Split layout styling */
+/* Modified split layout styling */
 .chat-layout {
   display: flex;
   flex: 1;
   width: 100%;
   height: 100%;
+  justify-content: center; /* Center the chat when alone */
 }
 
+/* When preview is hidden, limit width and center the chat */
+.chat-layout.full-width .chat-section {
+  width: 80%; /* Use 80% of screen width when alone */
+  max-width: 800px; /* Optional: set a maximum width */
+}
+
+/* When preview is shown, chat takes up its normal space */
 .chat-section {
-  width: 33.33%; /* Changed from fixed 430px to 1/3 of the width */
-  border-right: 1px solid #333333;
+  width: 33.33%;
   display: flex;
   flex-direction: column;
   height: 100%;
   position: relative;
   overflow-y: auto;
+  transition: width 0.3s ease;
 }
 
+/* Preview section remains as before */
 .preview-section {
-  flex: 2; /* Changed from flex: 1 to flex: 2 to take up 2/3 of the width */
+  flex: 2;
   display: flex;
+  border-left: 1px solid #333333;
   align-items: flex-start;
   justify-content: flex-start;
   padding: 20px;
+  transition: width 0.3s ease;
+}
+
+/* Remove any conflicting styles */
+.chat-layout.full-width {
+  justify-content: center;
 }
 
 .component-preview {

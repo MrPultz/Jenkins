@@ -4,8 +4,11 @@ import {FormsModule} from "@angular/forms";
 import {NgClass, NgForOf, NgIf} from "@angular/common";
 import {SvgviewerComponent} from "../../components/svgviewer/svgviewer.component";
 import {ThreedViewerComponent} from "../../components/threed-viewer/threed-viewer.component";
-import { ChatMessageService, ChatMessage} from "../../services/chat-message.service";
 import { MarkdownModule } from 'ngx-markdown';
+import {BaseChatAgentService, ChatMessage} from "../../services/base-chat-agent.service";
+import {ConsultantService} from "../../services/consultant.service";
+import {SvgAgentService} from "../../services/svg-agent.service";
+import {ThreedAgentServiceService} from "../../services/threed-agent-service.service";
 
 @Component({
   selector: 'app-chat',
@@ -25,7 +28,6 @@ import { MarkdownModule } from 'ngx-markdown';
 export class ChatComponent implements OnInit {
   messages: ChatMessage[] = [];
   inputMessage: string = '';
-  generatedSvgCodes: string[] = [];
   selectedSvgIndex: number = 0;
   isLoading: boolean = false;
   isRecording = false;
@@ -34,39 +36,32 @@ export class ChatComponent implements OnInit {
   speechSynthesis: SpeechSynthesis = window.speechSynthesis;
   isSpeaking = false;
 
+  // Agent selection properties
+  activeAgentType: string = 'consultant';
+  currentAgent: BaseChatAgentService;
 
-  constructor(private chatService: ChatMessageService) { }
+  // SVG content if needed
+  generatedSvgCodes: string[] = [];
+
+
+  // Agent properties
+  showPreview = false;
+  svgAgent = false;
+  threeDAgent = false;
+
+
+  constructor(private consultantService: ConsultantService,
+              private svgAgentService: SvgAgentService,
+              private threeDAgentService: ThreedAgentServiceService)
+  {
+    this.currentAgent = this.consultantService
+  }
 
   async ngOnInit() {
     this.initSpeechRecognition();
     this.loadVoices();
-    // Initialize with a welcome message
-    this.isLoading = true;
-    try {
-      const response = await this.chatService.getInitialMessage();
-      this.messages.push({
-        id: 1,
-        text: response.message,
-        isSystem: true,
-        timestamp: new Date(),
-        needMoreInformation: response.needMoreInformation
-      });
 
-      if (response.sessionId) {
-        this.chatService.setSessionId(response.sessionId);
-      }
-    } catch (error) {
-      console.error('Failed to get initial message:', error);
-      this.messages.push({
-        id: 1,
-        text: 'Welcome to the Object Generator! I can help you create various 3D objects. What would you like to generate today?',
-        isSystem: true,
-        timestamp: new Date(),
-        needMoreInformation: false
-      });
-    } finally {
-      this.isLoading = false;
-    }
+    this.messages = [];
 
     //TODO: remove for later when implementation is finished
     //Adds mock SVGs
@@ -168,52 +163,39 @@ export class ChatComponent implements OnInit {
   async sendMessage() {
     if (this.inputMessage.trim() === '') return;
 
-    const wasVoiceInput = this.lastInputWasVoice;
+    const userMessage = this.inputMessage.trim();
+    this.inputMessage = '';
 
     // Add user message to chat
-    const userMessageId = this.messages.length + 1;
     this.messages.push({
-      id: userMessageId,
-      text: this.inputMessage,
+      id: this.messages.length,
+      text: userMessage,
       isUser: true,
       timestamp: new Date(),
       needMoreInformation: false
     });
 
-    const userMessage = this.inputMessage;
-    this.inputMessage = '';
     this.isLoading = true;
 
     try {
-      const response = await this.chatService.sendMessage(userMessage);
+      // Use the current agent to process the message
+      const response = await this.currentAgent.sendMessage(userMessage);
 
-      // Add API response to chat
-      const systemMessage = {
-        id: userMessageId + 1,
+      // Add response to chat
+      this.messages.push({
+        id: this.messages.length,
         text: response.message,
         isSystem: true,
         timestamp: new Date(),
         needMoreInformation: response.needMoreInformation
-      };
+      });
 
-      this.messages.push(systemMessage);
-
-      if (response.sessionId) {
-        this.chatService.setSessionId(response.sessionId);
-      }
-
-      // Read response aloud if the last input was voice
-      if (wasVoiceInput) {
-        this.readResponseAloud(response.message);
-        this.lastInputWasVoice = false; // Reset the flag
-      }
     } catch (error) {
       console.error('Error sending message:', error);
-
-      // Add error message
+      // Add error message to chat
       this.messages.push({
-        id: userMessageId + 1,
-        text: 'Sorry, there was an error processing your request. Please try again later.',
+        id: this.messages.length,
+        text: 'Sorry, there was an error processing your request.',
         isSystem: true,
         timestamp: new Date(),
         needMoreInformation: false
@@ -222,6 +204,7 @@ export class ChatComponent implements OnInit {
       this.isLoading = false;
     }
   }
+
 
   // Method to read response aloud
   readResponseAloud(text: string): void {
