@@ -12,7 +12,7 @@ export class ConsultantService extends BaseChatAgentService {
   }
 
   protected override getSystemPromptPath(): string {
-    return '/assets/agents/02_functionalDesign.json'; // Change this to a txt file that is right.
+    return '/assets/agents/consultantAgent.txt'; // Change this to a txt file that is right.
   }
 
   protected override getFallbackSystemPrompt(): string {

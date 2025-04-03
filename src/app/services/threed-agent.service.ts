@@ -5,7 +5,7 @@ import {HttpClient} from "@angular/common/http";
 @Injectable({
   providedIn: 'root'
 })
-export class ThreedAgentServiceService extends BaseChatAgentService{
+export class ThreedAgentService extends BaseChatAgentService{
   constructor(http: HttpClient) {
     super(http);
   }

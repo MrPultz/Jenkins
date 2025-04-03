@@ -1,4 +1,13 @@
+/* Cleaned and improved CSS */
+.chat-container {
+  display: flex;
+  height: 100vh;
+  background-color: #1e1e1e;
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
+/* Welcome screen styling */
 .welcome-screen {
   display: flex;
   flex-direction: column;
@@ -18,39 +27,77 @@
 .welcome-screen p {
   font-size: 1.2rem;
   color: #999;
-  max-width: 400px;
+  max-width: 600px;
+  margin-top: 0;
+  margin-bottom: 2rem;
 }
 
-.chat-container {
+/* Chat layout */
+.chat-layout {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* When preview is hidden - centered chat like Gemini */
+.chat-layout.full-width {
+  justify-content: center;
+}
+
+.chat-layout.full-width .chat-section {
+  width: 100%;
+  max-width: 768px; /* Closer to Gemini's width */
+  margin: 0 auto;
+}
+
+/* Chat section takes full width by default */
+.chat-section {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background-color: #1e1e1e;
-  color: #ffffff;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  height: 100%;
+  overflow-y: auto;
+  transition: width 0.3s ease;
 }
 
-.chat-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #333333;
-  background-color: #1e1e1e;
+/* Preview section styling */
+.preview-section {
+  display: none; /* Hidden by default */
+  border-left: 1px solid #333333;
+  padding: 20px;
+  transition: all 0.3s ease;
 }
 
-.chat-title {
+/* When preview is shown, adjust layout */
+.chat-layout:not(.full-width) .chat-section {
+  width: 33.33%;
+}
+
+.chat-layout:not(.full-width) .preview-section {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  flex: 2;
 }
 
+.component-preview {
+  width: 100%;
+  height: 100%;
+  color: #c8c8c8;
+  border: 2px dashed #444444;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Message containers and layout */
 .chat-messages {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
-  position: relative;
 }
 
 .message-container {
@@ -60,120 +107,37 @@
   flex-direction: column;
 }
 
+/* Unified message styling */
 .message-content {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-/* Update the user message styling */
-.message-content.user-message {
-  background-color: #1e3a5f;
-  padding: 12px;
   border-radius: 8px;
-  margin-left: auto;
-  max-width: 80%;
-  display: flex;
-  flex-direction: column;
+  max-width: 85%;
 }
 
-/* Style for user avatar + text container */
-.message-content.user-message .avatar-text-container {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end; /* Push contents to the right */
-  gap: 12px;
-  align-items: flex-start;
-}
-
-/* Ensure the user message text appears before the avatar */
-.message-content.user-message .message-text {
-  order: 1;
-}
-
-.message-content.user-message .message-avatar {
-  order: 2;
-}
-
+/* System message styling */
 .message-content.system-message {
   background-color: #2c2c2c;
   padding: 12px;
-  border-radius: 8px;
-  max-width: 80%;
-  display: flex;
-  flex-direction: column; /* Keep this to stack buttons below the message */
+  align-self: flex-start;
 }
 
-/* Container for avatar and text only */
-.message-content.system-message .avatar-text-container {
-  display: flex;
-  flex-direction: row; /* Keep avatar and text side by side */
-  gap: 12px;
-  align-items: flex-start;
-}
-
-/* Fix for system message avatar and text layout */
-.message-content.system-message > div:first-child {
-  display: flex;
-  flex-direction: row;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.message-text {
-  flex: 1;
-}
-
-.system-message {
-  background-color: #2c2c2c;
+/* User message styling */
+.message-content.user-message {
+  background-color: #1e3a5f;
   padding: 12px;
-  border-radius: 8px;
-  max-width: 80%;
-}
-
-.info-buttons {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  gap: 8px;
-  margin-top: 10px;
-  width: 100%;
-  overflow-x: auto;
-  padding-bottom: 5px;
-}
-
-.info-button {
-  background-color: #3a3a3a;
-  border: 1px solid #555555;
-  color: #ffffff;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  white-space: nowrap; /* Prevents button text from wrapping */
-  flex-shrink: 0; /* Prevents buttons from shrinking */
-}
-
-.info-button:hover {
-  background-color: #4a4a4a;
-}
-
-.user-message {
-  display: flex;
+  margin-left: auto;
   align-self: flex-end;
-  background-color: #1e3a5f; /* Blue background */
-  border-radius: 8px;
-  margin-left: auto; /* Push to right edge */
-  max-width: 80%;
 }
 
-.user-message .message-text {
-  padding-right: 12px;
+/* Avatar and text container */
+.avatar-text-container {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
 }
 
-.user-message .message-avatar {
-  margin-left: 0;
-  margin-right: 0;
+.message-content.user-message .avatar-text-container {
+  flex-direction: row-reverse;
 }
 
 .message-avatar {
@@ -188,115 +152,31 @@
   line-height: 1.4;
 }
 
-.message-text a {
-  color: #FF4000;
-  text-decoration: none;
-}
-
-.message-text a:hover {
-  text-decoration: underline;
-}
-
-.message-actions {
+/* Option buttons styling */
+.option-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 8px;
-  padding-left: 36px;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
-.action-button {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background-color: #2c2c2c;
-  border: 1px solid #444444;
-  color: #ffffff;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.action-button:hover {
+.option-button {
   background-color: #3a3a3a;
+  border: 1px solid #555555;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #ffffff;
+  transition: background-color 0.2s;
 }
 
-.info-message {
-  background-color: #1e3a5f;
-  padding: 12px;
-  border-radius: 8px;
-  max-width: 80%;
-  display: flex;
-  flex-direction: row-reverse; /* Reverse the direction to put avatar on right */
-  align-items: flex-start;
-  gap: 12px;
-  align-self: flex-end; /* Align the whole message to the right side */
-  margin-left: auto; /* Push to right edge */
+.option-button:hover {
+  background-color: #4a4a4a;
 }
 
-/* You might want to adjust the message avatar margin */
-.info-message .message-avatar {
-  margin-left: 0;
-  margin-right: 0;
-}
-
-.center-message {
-  text-align: center;
-  color: #999999;
-  margin: 40px 0;
-}
-
-/* Modified split layout styling */
-.chat-layout {
-  display: flex;
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  justify-content: center; /* Center the chat when alone */
-}
-
-/* When preview is hidden, limit width and center the chat */
-.chat-layout.full-width .chat-section {
-  width: 80%; /* Use 80% of screen width when alone */
-  max-width: 800px; /* Optional: set a maximum width */
-}
-
-/* When preview is shown, chat takes up its normal space */
-.chat-section {
-  width: 33.33%;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  position: relative;
-  overflow-y: auto;
-  transition: width 0.3s ease;
-}
-
-/* Preview section remains as before */
-.preview-section {
-  flex: 2;
-  display: flex;
-  border-left: 1px solid #333333;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 20px;
-  transition: width 0.3s ease;
-}
-
-/* Remove any conflicting styles */
-.chat-layout.full-width {
-  justify-content: center;
-}
-
-.component-preview {
-  color: #c8c8c8;
-  border: 2px dashed #dfdfdf;
-  border-radius: 8px;
-  width: 100%;
-  height: 100%;
-}
-
-/* Fix chat input width to match parent container */
+/* Chat input area */
 .chat-input {
   padding: 16px;
   background-color: #1e1e1e;
@@ -305,7 +185,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  width: 100%; /* Changed from 92% to 100% */
+  width: 100%;
   box-sizing: border-box;
 }
 
@@ -313,9 +193,10 @@
   display: flex;
   align-items: center;
   background-color: #2c2c2c;
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
+  border-radius: 24px; /* More rounded like Gemini */
+  padding: 8px 16px;
+  max-width: 750px;
+  margin: 0 auto;
 }
 
 .input-container input {
@@ -325,47 +206,66 @@
   color: #ffffff;
   outline: none;
   font-size: 14px;
+  padding: 8px 0;
 }
 
-.input-container input::placeholder {
-  color: #777777;
-}
-
-.send-button {
-  background-color: #FF4000;
-  border: none;
-  border-radius: 4px;
-  width: 28px;
-  height: 28px;
+/* Voice and send buttons */
+.mic-button, .send-button, .speak-button {
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  border: none;
 }
 
-.send-button svg {
-  color: #ffffff;
+.mic-button {
+  color: #FF4000;
+  padding: 8px;
+  margin-right: 4px;
+  background: transparent;
+  border-radius: 50%;
+  position: relative;
+}
+
+.mic-button:hover {
+  background-color: rgba(255, 64, 0, 0.1);
+}
+
+.mic-button.recording {
+  background-color: rgba(255, 64, 0, 0.2);
+}
+
+.send-button {
+  background-color: #FF4000;
+  border-radius: 50%; /* Circular like Gemini */
+  width: 32px;
+  height: 32px;
 }
 
 .send-button:hover {
   background-color: #FF6B40;
 }
 
-.status-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: #999999;
-  padding: 8px 16px;
-  border-top: 1px solid #333333;
+.speak-button {
+  background: transparent;
+  color: #777;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
 }
 
-.status-right {
-  display: flex;
-  gap: 16px;
+.speak-button:hover {
+  background-color: rgba(255, 64, 0, 0.1);
+  color: #FF4000;
 }
 
+.speak-button.speaking {
+  color: #FF4000;
+  animation: pulse-speak 1.5s infinite;
+}
+
+/* Loading indicator */
 .loading-indicator {
   display: flex;
   align-items: center;
@@ -383,27 +283,49 @@
   animation: bounce 1.4s infinite ease-in-out both;
 }
 
-.dot1 {
-  animation-delay: -0.32s;
+.dot1 { animation-delay: -0.32s; }
+.dot2 { animation-delay: -0.16s; }
+.dot3 { animation-delay: 0s; }
+
+/* Voice input indicators */
+.recording-indicator {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ff4000;
+  bottom: 2px;
+  right: 2px;
+  animation: pulse 1.5s infinite;
 }
 
-.dot2 {
-  animation-delay: -0.16s;
+.voice-status {
+  font-size: 12px;
+  color: #ff4000;
+  text-align: center;
+  margin-top: 4px;
+  font-style: italic;
 }
 
-.dot3 {
-  animation-delay: 0s;
-}
-
+/* Animation keyframes */
 @keyframes bounce {
-  0%, 80%, 100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-8px);
-  }
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
 }
 
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(0.8); opacity: 1; }
+}
+
+@keyframes pulse-speak {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Markdown styling */
 :host ::ng-deep {
   .message-text {
     markdown {
@@ -450,94 +372,55 @@
   }
 }
 
-.mic-button {
-  color: #FF4000;
+.loading-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
-  margin-right: 4px;
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  position: relative;
+  height: 100%;
+  width: 100%;
 }
 
-.mic-button:hover {
-  background-color: rgba(62, 142, 208, 0.1);
-}
-
-.mic-button.recording {
-  background-color: rgba(255, 64, 0, 0.2);
-}
-
-.recording-indicator {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #ff4000;
-  bottom: 2px;
-  right: 2px;
-  animation: pulse 1.5s infinite;
-}
-
-.voice-status {
-  font-size: 12px;
-  color: #ff4000;
-  text-align: center;
-  margin-top: 4px;
-  font-style: italic;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-}
-
-.speak-button {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: #777;
-  padding: 4px;
-  margin-left: 8px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  display: inline-flex;
+.generating-indicator {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-}
-
-.speak-button:hover {
-  background-color: rgba(255, 64, 0, 0.1);
   color: #FF4000;
 }
 
-.speak-button.speaking {
-  color: #FF4000;
-  animation: pulse-speak 1.5s infinite;
+.generating-indicator p {
+  margin-top: 16px;
+  font-size: 16px;
 }
 
-@keyframes pulse-speak {
+.spinner {
+  width: 50px;
+  height: 50px;
+  animation: rotate 2s linear infinite;
+}
+
+.spinner .path {
+  stroke: #FF4000;
+  stroke-linecap: round;
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
   0% {
-    opacity: 0.6;
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
   }
   50% {
-    opacity: 1;
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
   }
   100% {
-    opacity: 0.6;
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
   }
 }

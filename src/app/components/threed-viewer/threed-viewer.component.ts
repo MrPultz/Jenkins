@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, Input, ElementRef, HostListener, OnDestroy, SimpleChanges, OnInit, ViewChild} from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
@@ -12,6 +12,8 @@ import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
   styleUrl: './threed-viewer.component.css'
 })
 export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
+  @Input() modelUrl: string | null = null;
+
   @ViewChild('mainCanvas') mainCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('miniViewport') miniViewportRef!: ElementRef<HTMLDivElement>;
 
@@ -53,15 +55,53 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor() {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // Add a CSS check to make sure component is visible
+    setTimeout(() => {
+      const element = this.mainCanvasRef?.nativeElement;
+      if (element) {
+        const styles = window.getComputedStyle(element);
+        console.log('Canvas computed styles:', {
+          width: styles.width,
+          height: styles.height,
+          display: styles.display,
+          visibility: styles.visibility
+        });
+
+        // If the height is 0, log a warning
+        if (parseInt(styles.height) === 0) {
+          console.warn('Canvas height is 0! The 3D viewer needs a defined height to display properly.');
+        }
+      }
+    }, 100);
+  }
 
   ngAfterViewInit() {
+    // Add debug log for canvas dimensions
+    console.log('Canvas dimensions:', {
+      width: this.mainCanvasRef.nativeElement.clientWidth,
+      height: this.mainCanvasRef.nativeElement.clientHeight
+    });
+
+
     this.initMainScene();
     this.initMiniScene();
-    //this.loadFBXModel();
-    this.loadSTLModel();
+
+    // Don't load the default STL model if we have a custom URL
+    if (!this.modelUrl) {
+      this.loadSTLModel();
+    }
+
     this.animate();
-    this.handleResize();
+    // Force resize with delay to ensure DOM is fully rendered
+    setTimeout(() => {
+      this.handleResize();
+
+      // Force another update after a short delay
+      setTimeout(() => {
+        this.handleResize();
+      }, 300);
+    }, 100);
   }
 
   ngOnDestroy() {
@@ -116,76 +156,141 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadSTLModel() {
+    // Use the provided modelUrl if available, otherwise use default
+    const modelPath = this.modelUrl || 'assets/previewModel/keyboard.stl';
+    console.log('Loading STL model from:', modelPath);
+
     const stlLoader = new STLLoader();
-    stlLoader.load(
-      'assets/previewModel/keyboard.stl', // Update path to your STL file
-      (geometry) => {
 
-        // Example of different material options you might want to offer
-        const wireframeMaterial = new THREE.MeshBasicMaterial({
-          color: 0x000000,
-          wireframe: true
+    // Handle blob URLs differently than asset paths
+    if (modelPath.startsWith('blob:')) {
+      // For blob URLs, we need to fetch the data first
+      fetch(modelPath)
+        .then(response => response.blob())
+        .then(blob => {
+          // Create a FileReader to read the blob
+          const reader = new FileReader();
+          reader.addEventListener('load', (event) => {
+            if (event.target?.result) {
+              // Parse the ArrayBuffer
+              const geometry = stlLoader.parse(event.target.result as ArrayBuffer);
+              this.createModelFromGeometry(geometry);
+            }
+          });
+          reader.readAsArrayBuffer(blob);
+        })
+        .catch(error => {
+          console.error('Error loading STL from blob:', error);
         });
-
-        const phongMaterial = new THREE.MeshPhongMaterial({
-          color: 0xAAAAAA,
-          specular: 0x111111,
-          shininess: 200
-        });
-
-
-        // Create material for the STL model
-        const material = new THREE.MeshPhongMaterial({
-          color: 0xAAAAAA,
-          specular: 0x111111,
-          shininess: 200,
-          flatShading: true
-        });
-
-        // Create mesh with loaded geometry and material
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-
-// Calculate proper positioning
-        geometry.computeBoundingBox();
-        const box = geometry.boundingBox!;
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-
-// Calculate scale first
-        let scale = 1;
-        if (maxDim > 5) {
-          scale = 5 / maxDim;
-          mesh.scale.set(scale, scale, scale);
+    } else {
+      // For regular paths, use the normal loading method
+      stlLoader.load(
+        modelPath,
+        (geometry) => {
+          this.createModelFromGeometry(geometry);
+        },
+        (xhr) => {
+          console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+        },
+        (error) => {
+          console.error('Error loading STL model:', error);
         }
+      );
 
-// Apply position, accounting for scaling
-        mesh.position.set(
-          -center.x * scale,
-          -box.min.y * scale,
-          -center.z * scale
-        );
+      setTimeout(() => {
+        this.handleResize();
+      }, 100);
+    }
+  }
 
-        // Add to scene
-        this.model = mesh;
-        this.scene.add(mesh);
+  private createModelFromGeometry(geometry: THREE.BufferGeometry) {
+    // Create material for the STL model
+    const material = new THREE.MeshPhongMaterial({
+      color: 0xAAAAAA,
+      specular: 0x111111,
+      shininess: 200,
+      flatShading: true
+    });
 
-        // Point the camera and controls at the object
-        this.controls.target.copy(new THREE.Vector3(0, 0, 0));
-        this.controls.update();
-      },
-      (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-      },
-      (error) => {
-        console.error('Error loading STL model:', error);
-      }
+    // Create mesh with loaded geometry and material
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    // Calculate proper positioning
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox!;
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    // Calculate scale first
+    let scale = 1;
+    if (maxDim > 5) {
+      scale = 5 / maxDim;
+      mesh.scale.set(scale, scale, scale);
+    }
+
+    // Apply position, accounting for scaling
+    mesh.position.set(
+      -center.x * scale,
+      -box.min.y * scale,
+      -center.z * scale
     );
 
+    // Remove existing model if any
+    if (this.model && this.scene.getObjectById(this.model.id)) {
+      this.scene.remove(this.model);
+    }
 
+    // Add to scene
+    this.model = mesh;
+    this.scene.add(mesh);
+
+    // Add debugging information
+    console.log('Model added to scene successfully');
+    console.log('Model position:', mesh.position);
+    console.log('Model scale:', mesh.scale);
+    console.log('Model dimensions:', {
+      width: geometry.boundingBox!.max.x - geometry.boundingBox!.min.x,
+      height: geometry.boundingBox!.max.y - geometry.boundingBox!.min.y,
+      depth: geometry.boundingBox!.max.z - geometry.boundingBox!.min.z
+    });
+    console.log('Camera position:', this.camera.position);
+
+    // Force a camera reset to ensure model is visible
+    this.resetCameraView();
+
+    // Point the camera and controls at the object
+    this.controls.target.copy(new THREE.Vector3(0, 0, 0));
+    this.controls.update();
+  }
+
+// Add this new method to reset the camera view
+  private resetCameraView() {
+    // Reset to a good viewing position
+    this.camera.position.set(5, 5, 5);
+    this.camera.lookAt(0, 0, 0);
+
+    // Update camera and controls
+    this.camera.updateProjectionMatrix();
+    this.controls.update();
+
+    // Force render to update the view
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['modelUrl'] && changes['modelUrl'].currentValue) {
+      console.log('Model URL changed, loading new STL model:', this.modelUrl);
+      // Clear any existing model
+      if (this.model && this.scene) {
+        this.scene.remove(this.model);
+      }
+      // Load the new model
+      this.loadSTLModel();
+    }
   }
 
   private loadFBXModel() {

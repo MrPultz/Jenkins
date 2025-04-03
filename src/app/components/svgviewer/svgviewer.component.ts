@@ -15,7 +15,7 @@ import { SafeHtmlPipe} from "../../pipes/safe-html.pipe";
   styleUrl: './svgviewer.component.css'
 })
 export class SvgviewerComponent implements OnChanges {
-  @Input() svgCodes: string[] = [];
+  @Input() svgCodes: { id: number, code: string, name: string }[] = [];
   @Output() svgSelected = new EventEmitter<number>();
 
   svgContent: string = '';
@@ -27,7 +27,7 @@ export class SvgviewerComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if(changes['svgCodes'] && changes['svgCodes'].currentValue) {
-      this.processedSvgs = this.svgCodes.map(code => this.processSvgCode(code))
+      this.processedSvgs = this.svgCodes.map(item => this.processSvgCode(item.code))
     }
   }
 
@@ -46,11 +46,14 @@ export class SvgviewerComponent implements OnChanges {
   }
 
   downloadSvg(): void {
-    const blob = new Blob([this.svgContent], { type: 'image/svg+xml' });
+    if (this.processedSvgs.length === 0) return;
+
+    const svgToDownload = this.processedSvgs[this.selectedIndex];
+    const blob = new Blob([svgToDownload], { type: 'image/svg+xml' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'generated-svg.svg';
+    a.download = `svg-design-${this.selectedIndex + 1}.svg`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

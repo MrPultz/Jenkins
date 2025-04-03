@@ -4,6 +4,11 @@ import { OpenAI } from 'openai';
 import { environment } from '../../environments/environment';
 import { deepseek } from '../../environments/deepseek';
 
+export interface ChatOption {
+  id: number;
+  label: string;
+  description?: string;
+}
 export interface ChatMessage {
   id: number;
   text: string;
@@ -11,6 +16,7 @@ export interface ChatMessage {
   isSystem?: boolean;
   timestamp?: Date;
   needMoreInformation: boolean;
+  options?: ChatOption[];
 }
 
 export interface ChatResponse {
@@ -45,8 +51,16 @@ export abstract class BaseChatAgentService {
 
   protected async loadSystemPrompt() {
     try {
-      this.systemPrompt = await fetch(this.getSystemPromptPath())
-        .then(response => response.json());
+      // Fetch the text file
+      const response = await fetch(this.getSystemPromptPath());
+      // Get the text content instead of parsing as JSON
+      const textContent = await response.text();
+
+      // Create the system prompt structure manually
+      this.systemPrompt = {
+        system_prompt: textContent,
+        user_prompt_template: "{user_input}"
+      };
     } catch (error) {
       console.error('Error loading system prompt:', error);
       // Fallback system prompt if file can't be loaded

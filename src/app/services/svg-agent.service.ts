@@ -11,7 +11,7 @@ export class SvgAgentService extends BaseChatAgentService{
   }
 
   protected override getSystemPromptPath(): string {
-    return '/assets/agents/svg_generator.json';
+    return '/assets/agents/svgAgent.txt';
   }
 
   protected override getFallbackSystemPrompt(): string {
