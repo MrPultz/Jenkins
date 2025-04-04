@@ -36,6 +36,9 @@ export class ChatComponent implements OnInit {
   speechSynthesis: SpeechSynthesis = window.speechSynthesis;
   isSpeaking = false;
 
+  // Add this property to store the current session ID at the component level
+  private currentSessionId: string | undefined;
+
   // Agent selection properties
   activeAgentType: string = 'consultant';
   currentAgent: BaseChatAgentService;
@@ -92,7 +95,7 @@ export class ChatComponent implements OnInit {
       this.runSvgTest();
     }
 
-    this.testScad = true;
+    this.testScad = false;
 
     if(this.testScad){
       this.testScadConversion();
@@ -261,25 +264,58 @@ export class ChatComponent implements OnInit {
     this.isLoading = true;
 
     try {
+      // If we have a session ID, set it on the current agent
+      if (this.currentSessionId) {
+        console.log('Using existing session ID:', this.currentSessionId);
+        this.currentAgent.setSessionId(this.currentSessionId);
+      }
+
       // Use the current agent to process the message
       const response = await this.currentAgent.sendMessage(userMessage);
 
-      // Try to parse options from the response
+      // Store the session ID for future use
+      if (response.sessionId) {
+        this.currentSessionId = response.sessionId;
+        console.log('Updated session ID:', this.currentSessionId);
+      }
+
+      // Log the full response for debugging
+      console.log('Full response from agent:', response);
+      console.log('Raw message content:', response.message);
+
+      // Improved JSON extraction and processing
       let parsedOptions: ChatOption[] | undefined;
       let messageText = response.message;
+      let projectData = null;
 
-      try {
-        // Look for JSON structure in the response
-        const jsonMatch = response.message.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const jsonData = JSON.parse(jsonMatch[0]);
-          if (jsonData.question && jsonData.options) {
-            messageText = jsonData.question;
-            parsedOptions = jsonData.options; // This is the parsed options - this is where we should get all the information so we can hover effect that tells description.
+      // Search for complete JSON objects by finding matching braces
+      const potentialJsonObjects = this.findCompleteJsonObjects(response.message);
+      console.log('Potential JSON objects found:', potentialJsonObjects.length);
+
+      for (const jsonStr of potentialJsonObjects) {
+        try {
+          const parsed = JSON.parse(jsonStr);
+          console.log('Successfully parsed JSON object:', parsed);
+
+          // Check if this is an options object
+          if (parsed.question && Array.isArray(parsed.options)) {
+            console.log('Found options JSON');
+            parsedOptions = parsed.options;
+            messageText = parsed.question;
           }
+          // Check if this is a project data object
+          else if (parsed.project_name && parsed.object_type) {
+            console.log('Found project data JSON');
+            projectData = parsed;
+
+            // If we already have options, format the message to include both
+            if (parsedOptions) {
+              messageText = `${JSON.stringify(projectData, null, 2)}\n\n${messageText}`;
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse JSON object:', e);
         }
-      } catch (parseError) {
-        console.log('No valid JSON options found in response');
       }
 
       // Add response to chat
@@ -289,8 +325,15 @@ export class ChatComponent implements OnInit {
         isSystem: true,
         timestamp: new Date(),
         needMoreInformation: response.needMoreInformation,
-        options: parsedOptions
+        options: parsedOptions,
+        projectData: projectData
       });
+
+      // If last input was voice, read response aloud
+      if (this.lastInputWasVoice && messageText) {
+        this.readResponseAloud(messageText);
+        this.lastInputWasVoice = false;
+      }
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -307,97 +350,286 @@ export class ChatComponent implements OnInit {
     }
   }
 
-  selectOption(option: ChatOption, message: ChatMessage) {
-    // Handle the selection
-    console.log(`Selected option: ${option.label} (ID: ${option.id})`);
+// Add a helper function to find complete JSON objects in text
+  findCompleteJsonObjects(text: string): string[] {
+    const results: string[] = [];
+    let braceCount = 0;
+    let startIndex = -1;
 
-    // If "submit" option is selected, switch to SVG agent
-    //TODO: Make sure it saves the last respond it gets from the consultant agent. to send to the with the SVG agent.
-    // MAke this an await so it changes the layout but waits for the response to get back so it can send it with the SVG agent.
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === '{') {
+        if (braceCount === 0) {
+          startIndex = i;
+        }
+        braceCount++;
+      } else if (text[i] === '}') {
+        braceCount--;
+        if (braceCount === 0 && startIndex !== -1) {
+          // We found a complete JSON object
+          results.push(text.substring(startIndex, i + 1));
+          startIndex = -1;
+        }
+      }
+    }
+
+    return results;
+  }
+
+  async selectOption(option: ChatOption, message: ChatMessage) {
+    console.log('Option selected:', option);
+    console.log('Parent message:', message);
+    console.log('Current session ID before option selection:', this.currentSessionId);
+
+    // Add user's selection as a message in the chat display
+    this.messages.push({
+      id: this.messages.length,
+      text: `Selected: ${option.label}`,
+      isUser: true,
+      timestamp: new Date(),
+      needMoreInformation: false
+    });
+
+    // If "submit" option is selected, handle the transition to SVG agent
     if (option.label.toLowerCase().includes('submit')) {
-      // Add user's selection as a message in the chat display
-      this.messages.push({
-        id: this.messages.length,
-        text: `Selected: ${option.label}`,
-        isUser: true,
-        timestamp: new Date(),
-        needMoreInformation: false
-      });
-
-      this.activeAgentType = 'svg';
-      this.currentAgent = this.svgAgentService;
-      this.svgAgent = true;
-      this.threeDAgent = false;
-      this.showPreview = true;
-
-      // Add a transition message
-      this.messages.push({
-        id: this.messages.length,
-        text: "Switching to SVG generation mode. How can I help you create SVG graphics?",
-        isSystem: true,
-        timestamp: new Date(),
-        needMoreInformation: false
-      });
-    } else {
-      // For other options, manually add the message and send directly to agent
-      // Add user's selection as a message in the chat display
-      this.messages.push({
-        id: this.messages.length,
-        text: `Selected: ${option.label}`,
-        isUser: true,
-        timestamp: new Date(),
-        needMoreInformation: false
-      });
-
       this.isLoading = true;
 
+      try {
+        console.log('Submitting final request to consultant agent with option ID:', option.id);
 
-      //TODO: Fix so we dont got 26 lines of redundant code....
-      // Send the option ID directly to the agent without calling sendMessage()
-      this.currentAgent.sendMessage(`${option.id}`)
-        .then(response => {
-          // Process the response similar to sendMessage()
-          let parsedOptions: ChatOption[] | undefined;
-          let messageText = response.message;
+        // Ensure the consultant agent has the current session ID
+        if (this.currentSessionId) {
+          console.log('Using existing session ID for consultant:', this.currentSessionId);
+          this.currentAgent.setSessionId(this.currentSessionId);
+        }
 
-          try {
-            // Look for JSON structure in the response
-            const jsonMatch = response.message.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const jsonData = JSON.parse(jsonMatch[0]);
-              if (jsonData.question && jsonData.options) {
-                messageText = jsonData.question;
-                parsedOptions = jsonData.options;
+        // Send the option ID directly to the agent
+        const response = await this.currentAgent.sendMessage(`${option.id}`);
+
+        // Update the session ID from the response
+        if (response.sessionId) {
+          this.currentSessionId = response.sessionId;
+          console.log('Updated session ID after final consultant response:', this.currentSessionId);
+        }
+
+        console.log('Full consultant final response:', response);
+        console.log('Consultant response raw message:', response.message);
+
+        // Extract project data from the response
+        let projectData = null;
+        try {
+          console.log('Looking for JSON project data in response...');
+          const jsonMatches = this.findCompleteJsonObjects(response.message);
+          console.log('JSON matches found:', jsonMatches);
+
+          if (jsonMatches) {
+            for (const match of jsonMatches) {
+              try {
+                console.log('Attempting to parse JSON match:', match);
+                const parsed = JSON.parse(match);
+                console.log('Successfully parsed JSON:', parsed);
+
+                if (parsed.project_name && parsed.object_type && parsed.primary_function) {
+                  projectData = parsed;
+                  console.log('Found project data:', projectData);
+                  break;
+                }
+              } catch (parseError) {
+                console.error('Failed to parse JSON match:', parseError);
               }
             }
-          } catch (parseError) {
-            console.log('No valid JSON options found in response');
+          }
+        } catch (parseError) {
+          console.error('Error parsing project data:', parseError);
+        }
+
+        // Add final consultant response to chat
+        this.messages.push({
+          id: this.messages.length,
+          text: response.message,
+          isSystem: true,
+          timestamp: new Date(),
+          needMoreInformation: false
+        });
+
+        // Now switch to SVG agent
+        console.log('Switching from consultant to SVG agent');
+        this.activeAgentType = 'svg';
+        this.currentAgent = this.svgAgentService;
+        this.svgAgent = true;
+        this.threeDAgent = false;
+        this.showPreview = true;
+
+        // Create a new session for the SVG agent
+        const newSvgSessionId = 'svg-session-' + Date.now();
+        console.log('Creating new SVG agent session:', newSvgSessionId);
+        this.svgAgentService.setSessionId(newSvgSessionId);
+        this.currentSessionId = newSvgSessionId;
+
+        // Add a transition message
+        this.messages.push({
+          id: this.messages.length,
+          text: "Switching to SVG generation mode. Creating graphics based on your specifications...",
+          isSystem: true,
+          timestamp: new Date(),
+          needMoreInformation: false
+        });
+
+        // If project data was extracted, send it to SVG agent
+        if (projectData) {
+          console.log("Extracted project data to send to SVG agent:", projectData);
+
+          // Format the project data for the SVG agent
+          const projectDataString = JSON.stringify(projectData, null, 2);
+          const svgPrompt = `Please create SVG designs based on the following project specifications:\n\`\`\`json\n${projectDataString}\n\`\`\``;
+
+          console.log('SVG agent prompt:', svgPrompt);
+
+          // Send the extracted data to the SVG agent
+          console.log('Sending prompt to SVG agent...');
+          const svgResponse = await this.svgAgentService.sendMessage(svgPrompt);
+          console.log('Full SVG agent response:', svgResponse);
+          console.log('SVG agent raw message:', svgResponse.message);
+          console.log('SVG agent session ID:', svgResponse.sessionId);
+
+          // Update the session ID if it changed
+          if (svgResponse.sessionId) {
+            this.currentSessionId = svgResponse.sessionId;
+            console.log('Updated session ID after SVG response:', this.currentSessionId);
           }
 
-          // Add response to chat
+          // Extract SVG code from the response
+          console.log('Extracting SVG codes from response...');
+          this.extractSvgCodesFromResponse(svgResponse.message);
+          console.log('Extracted SVG codes:', this.generatedSvgCodes);
+
+          // Add SVG agent's response to chat
           this.messages.push({
             id: this.messages.length,
-            text: messageText,
-            isSystem: true,
-            timestamp: new Date(),
-            needMoreInformation: response.needMoreInformation,
-            options: parsedOptions
-          });
-        })
-        .catch(error => {
-          console.error('Error sending message:', error);
-          // Add error message to chat
-          this.messages.push({
-            id: this.messages.length,
-            text: 'Sorry, there was an error processing your request.',
+            text: svgResponse.message,
             isSystem: true,
             timestamp: new Date(),
             needMoreInformation: false
           });
-        })
-        .finally(() => {
-          this.isLoading = false;
+
+          // If no SVGs found, show error message
+          if (this.generatedSvgCodes.length === 0) {
+            console.log('No SVG designs found in the response');
+            this.messages.push({
+              id: this.messages.length,
+              text: 'No SVG designs were found in the response. Please try again with different specifications.',
+              isSystem: true,
+              timestamp: new Date(),
+              needMoreInformation: false
+            });
+          }
+        } else {
+          console.log('Failed to extract project data from consultant response');
+          this.messages.push({
+            id: this.messages.length,
+            text: "I couldn't extract project specifications from the consultant's response. Please describe what you'd like me to create.",
+            isSystem: true,
+            timestamp: new Date(),
+            needMoreInformation: true
+          });
+        }
+
+      } catch (error) {
+        console.error('Error in submit workflow:', error);
+        this.messages.push({
+          id: this.messages.length,
+          text: 'Sorry, there was an error processing your request.',
+          isSystem: true,
+          timestamp: new Date(),
+          needMoreInformation: false
         });
+      } finally {
+        this.isLoading = false;
+      }
+    } else {
+      // For non-submit options, send directly to current agent
+      this.isLoading = true;
+
+      try {
+        console.log('Sending option ID to current agent:', option.id);
+
+        // Ensure the current agent has the correct session ID
+        if (this.currentSessionId) {
+          console.log('Using existing session ID for option selection:', this.currentSessionId);
+          this.currentAgent.setSessionId(this.currentSessionId);
+        }
+
+        // Send the option ID directly to the agent
+        const response = await this.currentAgent.sendMessage(`${option.id}`);
+
+        // Log full response for debugging
+        console.log('Full response from agent after selecting option:', response);
+        console.log('Raw message after option selection:', response.message);
+        console.log('Session ID after option selection:', response.sessionId);
+
+        // Update the session ID from the response
+        if (response.sessionId) {
+          this.currentSessionId = response.sessionId;
+          console.log('Updated session ID after option selection:', this.currentSessionId);
+        }
+
+        // Process the response using the same helper function
+        let parsedOptions: ChatOption[] | undefined;
+        let messageText = response.message;
+        let projectData = null;
+
+        // Search for complete JSON objects by finding matching braces
+        const potentialJsonObjects = this.findCompleteJsonObjects(response.message);
+        console.log('Potential JSON objects found:', potentialJsonObjects.length);
+
+        for (const jsonStr of potentialJsonObjects) {
+          try {
+            const parsed = JSON.parse(jsonStr);
+            console.log('Successfully parsed JSON object:', parsed);
+
+            // Check if this is an options object
+            if (parsed.question && Array.isArray(parsed.options)) {
+              console.log('Found options JSON');
+              parsedOptions = parsed.options;
+              messageText = parsed.question;
+            }
+            // Check if this is a project data object
+            else if (parsed.project_name && parsed.object_type) {
+              console.log('Found project data JSON');
+              projectData = parsed;
+
+              // If we already have options, format the message to include both
+              if (parsedOptions) {
+                messageText = `${JSON.stringify(projectData, null, 2)}\n\n${messageText}`;
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse JSON object:', e);
+          }
+        }
+
+        // Add response to chat
+        this.messages.push({
+          id: this.messages.length,
+          text: messageText,
+          isSystem: true,
+          timestamp: new Date(),
+          needMoreInformation: response.needMoreInformation,
+          options: parsedOptions,
+          projectData: projectData
+        });
+
+      } catch (error) {
+        console.error('Error sending option to agent:', error);
+        this.messages.push({
+          id: this.messages.length,
+          text: 'Sorry, there was an error processing your request.',
+          isSystem: true,
+          timestamp: new Date(),
+          needMoreInformation: false
+        });
+      } finally {
+        this.isLoading = false;
+      }
     }
   }
 

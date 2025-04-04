@@ -9,6 +9,7 @@ export interface ChatOption {
   label: string;
   description?: string;
 }
+
 export interface ChatMessage {
   id: number;
   text: string;
@@ -17,6 +18,7 @@ export interface ChatMessage {
   timestamp?: Date;
   needMoreInformation: boolean;
   options?: ChatOption[];
+  projectData?: any; // Added to store extracted project data
 }
 
 export interface ChatResponse {
@@ -29,14 +31,18 @@ export interface ChatResponse {
   providedIn: 'root'
 })
 export abstract class BaseChatAgentService {
+
   protected openai = new OpenAI({
     baseURL: deepseek.apiUrl,
     apiKey: deepseek.deepseekApiKey,
     dangerouslyAllowBrowser: true
   });
 
-  protected sessionId: string | null = null;
+  protected sessionId: string | undefined;
   protected systemPrompt: any = null;
+
+  // Store the full conversation history including system, user, and assistant messages
+  protected messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [];
 
   protected constructor(protected http: HttpClient) {
     // Load the system prompt when the service initializes
@@ -75,30 +81,61 @@ export abstract class BaseChatAgentService {
   protected getFallbackSystemPrompt(): string {
     return "You are a helpful assistant.";
   }
+
   async sendMessage(message: string): Promise<ChatResponse> {
+    // Make sure system prompt is loaded
     if (!this.systemPrompt) {
       await this.loadSystemPrompt();
     }
 
-    let designConfig = {
-      messages: [{
-        role: 'system' as const,
-        content: this.systemPrompt.system_prompt || this.getFallbackSystemPrompt(),
-      }, {
-        role: 'user' as const,
-        content: message
-      }],
-      model: 'deepseek-chat',
-      temperature: 0.0,
-      max_tokens: 1000
-    };
+    // Log the current session state
+    console.log('Current session ID before sending:', this.sessionId);
+
+    // Generate a new session ID only if one doesn't exist
+    if (!this.sessionId) {
+      this.sessionId = 'new-session-' + Date.now();
+      console.log('Created new session ID:', this.sessionId);
+
+      // Initialize conversation with system message only for new sessions
+      this.messages = [{
+        role: 'system',
+        content: this.systemPrompt.system_prompt || this.getFallbackSystemPrompt()
+      }];
+    }
+
+    // Always add the new user message to the conversation
+    this.messages.push({
+      role: 'user',
+      content: message
+    });
+
+    console.log('Full message history before API call:', JSON.stringify(this.messages));
 
     try {
-      const completion = await this.openai.chat.completions.create(designConfig);
+      // Send the complete message history to DeepSeek
+      const completion = await this.openai.chat.completions.create({
+        model: 'deepseek-chat',
+        temperature: 0.0,
+        max_tokens: 8000,
+        messages: this.messages
+      });
+
+      // Get the assistant's response
+      const assistantMessage = completion.choices[0].message;
+
+      // Add the assistant's response to our conversation history
+      this.messages.push({
+        role: 'assistant',
+        content: assistantMessage.content || ''
+      });
+
+      console.log('Updated message history after API response:', JSON.stringify(this.messages));
+
+      // Return the response with the existing session ID
       return {
-        message: completion.choices[0].message.content || '',
+        message: assistantMessage.content || '',
         needMoreInformation: false,
-        sessionId: this.sessionId || 'new-session-' + Date.now(),
+        sessionId: this.sessionId
       };
     } catch (error) {
       console.error('Error sending message:', error);
@@ -107,14 +144,38 @@ export abstract class BaseChatAgentService {
   }
 
   setSessionId(sessionId: string): void {
+    console.log('Setting session ID:', sessionId);
+
+    // If changing to a different session ID, reset conversation history
+    if (this.sessionId !== sessionId) {
+      console.log('Session changed, resetting conversation history');
+      this.messages = [{
+        role: 'system',
+        content: this.systemPrompt?.system_prompt || this.getFallbackSystemPrompt()
+      }];
+    }
+
     this.sessionId = sessionId;
   }
 
+  public getSessionId(): string | undefined {
+    return this.sessionId;
+  }
+
   async getInitialMessage(): Promise<ChatResponse> {
+    // Create a new session ID
+    this.sessionId = 'new-session-' + Date.now();
+
+    // Initialize the conversation with just the system message
+    this.messages = [{
+      role: 'system',
+      content: this.systemPrompt?.system_prompt || this.getFallbackSystemPrompt()
+    }];
+
     return Promise.resolve({
       message: this.getWelcomeMessage(),
       needMoreInformation: false,
-      sessionId: 'new-session-' + Date.now()
+      sessionId: this.sessionId
     });
   }
 }

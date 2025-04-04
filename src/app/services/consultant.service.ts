@@ -23,6 +23,9 @@ export class ConsultantService extends BaseChatAgentService {
     return "Welcome! I'm your design consultant. How can I help you with your project today?";
   }
   override async sendMessage(message: string): Promise<ChatResponse> {
+    // Log the current session ID before sending
+    console.log('ConsultantService sending message with sessionId:', this.sessionId);
+
     // Ensure message is not null or undefined before passing to parent
     return super.sendMessage(message || '');
   }
