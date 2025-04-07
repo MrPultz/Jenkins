@@ -1,11 +1,19 @@
-<div class="svg-viewer-container">
-  <div class="svg-grid">
-    <div
-      *ngFor="let svg of processedSvgs; let i = index"
-      [innerHTML]="svg | safeHtml"
-      [ngClass]="{'selected': selectedIndex === i}"
-      (click)="selectSvg(i)"
-      class="svg-card">
+<!-- In svgviewer.component.html -->
+<div class="svg-container">
+  <div class="svg-selection">
+    <div *ngFor="let svg of svgCodes; let i = index"
+         class="svg-item"
+         [class.selected]="i === selectedIndex"
+         (click)="onSvgSelect(i)">
+      <div [innerHTML]="svg.code | safeHtml"></div>
+      <div class="svg-name">{{svg.name || 'Design ' + (i+1)}}</div>
     </div>
+  </div>
+
+  <div class="svg-detail" *ngIf="svgCodes.length > 0 && selectedIndex >= 0">
+    <div class="svg-large" [innerHTML]="(svgCodes[selectedIndex].code || '') | safeHtml"></div>
+    <button class="convert-button" (click)="onSvgClick(selectedIndex)">
+      Convert to 3D Model
+    </button>
   </div>
 </div>

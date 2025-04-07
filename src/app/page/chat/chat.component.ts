@@ -718,6 +718,97 @@ export class ChatComponent implements OnInit {
   // 3D VIEWER PART
  //Test method with predefined parameters.
 // New method to convert SVG component data to SCAD
+  // In chat.component.ts, add this method:
+  onSvgClicked(index: number): void {
+    const selectedSvg = this.generatedSvgCodes[index];
+    if (!selectedSvg) return;
+
+    this.isLoading = true;
+
+    // Send message to get component data for the selected SVG
+    const prompt = `Please provide the component data for SVG design ${index + 1} in JSON format.
+               Include layout_options with components having id, type, x, y, and size properties.`;
+
+    // Send to SVG agent without showing in chat
+    this.svgAgentService.sendMessage(prompt)
+      .then(response => {
+        this.isLoading = false;
+
+        // Try to extract JSON from the response
+        try {
+          // Look for complete JSON objects in the response
+          const jsonBlocks = this.findCompleteJsonObjects(response.message);
+          console.log('JSON blocks found:', jsonBlocks);
+
+          // Find the one with layout_options
+          const layoutBlock = jsonBlocks.find(block => {
+            try {
+              const parsed = JSON.parse(block);
+              return parsed.layout_options && Array.isArray(parsed.layout_options);
+            } catch (e) {
+              return false;
+            }
+          });
+
+          if (layoutBlock) {
+            const layoutOptions = JSON.parse(layoutBlock);
+            console.log('Extracted layout options:', layoutOptions);
+
+            // Process the first layout option (or add UI to let user choose)
+            if (layoutOptions.layout_options && layoutOptions.layout_options.length > 0) {
+              // Get the first layout option's components
+              const components = layoutOptions.layout_options[0].components;
+              this.convertComponentsToScad(components);
+            }
+          } else {
+            console.error('No valid layout options found in response');
+          }
+        } catch (error) {
+          console.error('Error processing layout data:', error);
+        }
+      })
+      .catch(error => {
+        this.isLoading = false;
+        console.error('Error getting component data:', error);
+      });
+  }
+
+// Add the method to handle conversion of components
+  private convertComponentsToScad(components: any[]): void {
+    if (!components || components.length === 0) {
+      console.error('No components to convert');
+      return;
+    }
+
+    // Filter out non-button components if needed
+    const buttonComponents = components.filter(comp => comp.type === 'button');
+
+    if (buttonComponents.length === 0) {
+      console.error('No button components found');
+      return;
+    }
+
+    console.log('Converting components to SCAD:', buttonComponents);
+
+    // Set up the 3D viewer before making the request
+    this.showPreview = true;
+    this.threeDAgent = true;
+    this.svgAgent = false;
+
+    // Send to the SCAD converter service
+    this.scadConvertService.convertToScad(buttonComponents)
+      .subscribe({
+        next: (response: Blob) => {
+          console.log('SCAD conversion successful');
+          this.handleScadResponse(response);
+        },
+        error: (error: any) => {
+          console.error('Error converting to SCAD:', error);
+        }
+      });
+  }
+
+
   convertLastSvgResponseToScad(): void {
     // Find the last system message from the SVG agent
     const lastSvgMessage = [...this.messages]
@@ -769,26 +860,44 @@ export class ChatComponent implements OnInit {
     // Log print preparation message
     console.log('Starting to render 3D model for printing...');
 
-    // Set properties to display in 3D viewer
-    this.showPreview = true;
-    this.threeDAgent = true;
-    this.svgAgent = false;
-
     // Pass the model URL to the 3D viewer component
-    // You'll need to add a modelUrl property to your component
     this.modelUrl = url;
+
+    // Save the STL file
+    this.saveStlFile(response);
 
     // Add a message to the chat indicating the model is ready
     this.messages.push({
       id: this.messages.length,
-      text: 'Your 3D model has been created and is ready for preview. You can now view it in the 3D viewer.',
+      text: 'Your 3D model has been created and is ready for preview. You can now view it in the 3D viewer. The STL file has also been saved to your downloads.',
       isSystem: true,
       timestamp: new Date(),
       needMoreInformation: false
     });
+  }
 
-    // Optional: Add a download button if users want to save the file later
-    // You could implement this as a separate method or add a property to show a download button
+  // Add this new method to save the STL file
+  private saveStlFile(blob: Blob): void {
+    // Create a date-time string for filename uniqueness
+    const date = new Date();
+    const dateString = date.toISOString().replace(/[:.]/g, '-').substring(0, 19);
+
+    // Create a download link
+    const downloadLink = document.createElement('a');
+    downloadLink.href = window.URL.createObjectURL(blob);
+    downloadLink.download = `3d-model-${dateString}.stl`;
+
+    // Append to the document, click it, then remove it
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+
+    // Clean up
+    document.body.removeChild(downloadLink);
+    setTimeout(() => {
+      window.URL.revokeObjectURL(downloadLink.href);
+    }, 100);
+
+    console.log('STL file saved to downloads');
   }
 
   // Test method for SCAD conversion with mock data

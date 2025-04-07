@@ -125,9 +125,11 @@
         </div>
         <!-- SVG viewer shown when svgAgent is true -->
         <app-svgviewer
-          *ngIf="svgAgent"
+          *ngIf="showPreview && svgAgent && generatedSvgCodes.length > 0"
           [svgCodes]="generatedSvgCodes"
-          (svgSelected)="onSvgSelected($event)">
+          [selectedIndex]="selectedSvgIndex"
+          (selectSvg)="onSvgSelected($event)"
+          (clickSvg)="onSvgClicked($event)">
         </app-svgviewer>
 
         <!-- 3D viewer shown when threeDAgent is true -->
