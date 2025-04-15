@@ -6,7 +6,6 @@ mat-toolbar {
   min-height: 80px;
   color: #F5F5F5;
   border-bottom: #FF4000 1px solid;
-  box-shadow: 0 2px 8px rgb(255, 60, 0);
 }
 
 .left-section {

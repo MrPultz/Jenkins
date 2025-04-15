@@ -1,0 +1,43 @@
+<!-- src/app/page/chat/chatPage.component.html -->
+<div class="layout-container">
+  <app-chat
+    [messages]="messages"
+    [isLoading]="isLoading"
+    [isSpeaking]="isSpeaking"
+    [isRecording]="isRecording"
+    (sendMessageEvent)="onSendMessage($event)"
+    (optionSelectedEvent)="onOptionSelected($event)"
+    (speakTextEvent)="onSpeakText($event)"
+    (toggleRecordingEvent)="onToggleRecording()">
+  </app-chat>
+
+  <!-- The Preview Section - always in DOM but visibility controlled by CSS -->
+  <div class="preview-section" [ngClass]="{'hidden': !showPreview}">
+    <div class="component-preview">
+      <div class="loading-container" *ngIf="testInProgress">
+        <div class="generating-indicator">
+          <svg class="spinner" viewBox="0 0 50 50">
+            <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+          </svg>
+          <p>Generating SVG options...</p>
+        </div>
+      </div>
+
+      <!-- SVG viewer shown when svgAgent is true -->
+      <app-svgviewer
+        *ngIf="showPreview && svgAgent && generatedSvgCodes.length > 0"
+        [svgCodes]="generatedSvgCodes"
+        [selectedIndex]="selectedSvgIndex"
+        (selectSvg)="onSvgSelected($event)"
+        (clickSvg)="onSvgClicked($event)">
+      </app-svgviewer>
+
+      <!-- 3D viewer shown when threeDAgent is true -->
+      <app-threed-viewer
+        *ngIf="showPreview && threeDAgent"
+        [modelUrl]="modelUrl"
+        style="display: block; height: 100%; width: 100%;">
+      </app-threed-viewer>
+    </div>
+  </div>
+</div>

@@ -1,8 +1,6 @@
-<!-- The Chat Container -->
+<!-- src/app/components/chat/chat.component.html -->
 <div class="chat-container">
-  <!-- The Chat Layout with conditional class -->
-  <div class="chat-layout" [ngClass]="{'full-width': !showPreview}">
-    <!-- The Chat Section -->
+  <div class="chat-layout">
     <div class="chat-section">
       <!-- Welcome screen shown when no messages -->
       <div *ngIf="messages.length === 0" class="welcome-screen">
@@ -50,7 +48,18 @@
 
             <!-- For user messages -->
             <div class="avatar-text-container" *ngIf="message.isUser">
-              <div class="message-text" [innerHTML]="message.text"></div>
+              <!-- Text message or image message container -->
+              <div class="message-content-wrapper">
+                <!-- Normal text message -->
+                <div class="message-text" *ngIf="!message.type || message.type === 'text'" [innerHTML]="message.text"></div>
+
+                <!-- Image message -->
+                <div class="message-image" *ngIf="message.type === 'image'">
+                  <p>{{message.text}}</p>
+                  <img [src]="message.imageData" alt="User drawing" class="chat-image">
+                </div>
+              </div>
+
               <div class="message-avatar">
                 <svg viewBox="0 0 24 24" width="24" height="24">
                   <circle cx="12" cy="12" r="10" fill="#3e8ed0"></circle>
@@ -109,33 +118,6 @@
         <div class="voice-status" *ngIf="isRecording">
           Listening...
         </div>
-      </div>
-    </div>
-
-    <!-- The Preview Section - always in DOM but visibility controlled by CSS -->
-    <div class="preview-section">
-      <div class="component-preview">
-        <div class="loading-container" *ngIf="testInProgress">
-          <div class="generating-indicator">
-            <svg class="spinner" viewBox="0 0 50 50">
-              <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
-            </svg>
-            <p>Generating SVG options...</p>
-          </div>
-        </div>
-        <!-- SVG viewer shown when svgAgent is true -->
-        <app-svgviewer
-          *ngIf="showPreview && svgAgent && generatedSvgCodes.length > 0"
-          [svgCodes]="generatedSvgCodes"
-          [selectedIndex]="selectedSvgIndex"
-          (selectSvg)="onSvgSelected($event)"
-          (clickSvg)="onSvgClicked($event)">
-        </app-svgviewer>
-
-        <!-- 3D viewer shown when threeDAgent is true -->
-        <app-threed-viewer *ngIf="showPreview && threeDAgent" [modelUrl]="modelUrl"
-                           style="display: block; height: 100%; width: 100%;">
-        </app-threed-viewer>
       </div>
     </div>
   </div>

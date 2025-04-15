@@ -1,10 +1,11 @@
 ### TODO list
-- [ ] Main Page have small chat with drawing view on the right
-- [ ] Be able to upload the drawing and try to generate a layout based on that
+- [X] Main Page have small chat with drawing view on the right
+- [X] Be able to upload the drawing and try to generate a layout based on that (need prompt)
 - [ ] When starting first chat change to 3D view with a generated layout
 - [ ] Keep iterating maybe asking to move button "something something" to the left
-- [ ] Remove footer.  
+- [X] Remove footer.  
 - [ ] Add a button to go to the esthetic page with this stl
+- [ ] implement claude.ai API to be used
 
 
 

@@ -19,6 +19,8 @@ export interface ChatMessage {
   needMoreInformation: boolean;
   options?: ChatOption[];
   projectData?: any; // Added to store extracted project data
+  imageData?: string; // Add this field for image content
+  type?: 'text' | 'image'; // Add type field to differentiate message types
 }
 
 export interface ChatResponse {

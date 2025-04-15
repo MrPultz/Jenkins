@@ -1,0 +1,24 @@
+<!-- drawing.component.html -->
+<div class="drawing-container">
+  <canvas #canvas class="drawing-canvas"
+          (mousedown)="startDrawing($event)"
+          (mousemove)="draw($event)"
+          (mouseup)="stopDrawing()"
+          (mouseleave)="stopDrawing()"
+          (touchstart)="startTouchDrawing($event)"
+          (touchmove)="touchDraw($event)"
+          (touchend)="stopDrawing()"
+          (touchcancel)="stopDrawing()">
+  </canvas>
+
+  <div class="drawing-controls">
+    <button (click)="clearCanvas()" class="control-button">Clear</button>
+    <input type="color" [(ngModel)]="strokeColor" class="color-picker">
+    <select [(ngModel)]="lineWidth" class="line-width">
+      <option [value]="1">Thin</option>
+      <option [value]="3">Medium</option>
+      <option [value]="5">Thick</option>
+    </select>
+    <button (click)="submitDrawing()" class="control-button submit-button">Submit</button>
+  </div>
+</div>
