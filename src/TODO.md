@@ -6,7 +6,9 @@
 - [X] Remove footer.  
 - [ ] Add a button to go to the esthetic page with this stl
 - [ ] implement claude.ai API to be used
-
+- [ ] Delete old lines (maybe arrows forwards and backwards)
+- [ ] Change to eraser.
+- [ ] Tests: Can make a keyboard/remote from drawing. Can do it from text. Can make both circle and square keys. 
 
 
 ### TODO for moving another object
@@ -16,3 +18,5 @@
 - [ ] Make bounding box for the first object
 - [ ] Make sure the pivot is always touching the surface of the other object
 - [ ] Testing of the bounding box so the object can't go through the box.
+- [ ] Test if we can send the whole canvas to Claude
+- [ ] See if we can click on a face and move the object to that face
