@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-threed-viewer',
@@ -53,7 +54,7 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   // Animation
   private animationFrameId: number = 0;
 
-  constructor() {}
+  constructor(private router: Router) {}
 
   ngOnInit(): void {
     // Add a CSS check to make sure component is visible
@@ -75,6 +76,11 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }, 100);
   }
+
+  navigateToScadEditor(): void {
+    this.router.navigate(['/threeupload']);
+  }
+
 
   ngAfterViewInit() {
     // Add debug log for canvas dimensions

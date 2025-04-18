@@ -1,14 +1,14 @@
 ### TODO list
 - [X] Main Page have small chat with drawing view on the right
 - [X] Be able to upload the drawing and try to generate a layout based on that (need prompt)
-- [ ] When starting first chat change to 3D view with a generated layout
-- [ ] Keep iterating maybe asking to move button "something something" to the left
+- [X] When starting first chat change to 3D view with a generated layout
+- [X] Keep iterating maybe asking to move button "something something" to the left
 - [X] Remove footer.  
-- [ ] Add a button to go to the esthetic page with this stl
-- [ ] implement claude.ai API to be used
-- [ ] Delete old lines (maybe arrows forwards and backwards)
-- [ ] Change to eraser.
-- [ ] Tests: Can make a keyboard/remote from drawing. Can do it from text. Can make both circle and square keys. 
+- [X] Add a button to go to the esthetic page with this stl
+- [X] implement claude.ai API to be used (Only use when drawing is used)
+- [X] Delete old lines (maybe arrows forwards and backwards)
+- [X] Change to eraser.
+- [X] Tests: Can make a keyboard/remote from drawing. Can do it from text. Can make both circle and square keys. 
 
 
 ### TODO for moving another object
@@ -20,3 +20,7 @@
 - [ ] Testing of the bounding box so the object can't go through the box.
 - [ ] Test if we can send the whole canvas to Claude
 - [ ] See if we can click on a face and move the object to that face
+
+
+### Notes:
+found an issue when trying to generate a remote control. something with geometry.

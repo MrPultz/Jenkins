@@ -26,11 +26,13 @@ export class ChatComponent {
   @Input() isLoading = false;
   @Input() isSpeaking = false;
   @Input() isRecording = false;
+  @Input() useAnthropicModel = false;
 
   @Output() sendMessageEvent = new EventEmitter<string>();
   @Output() optionSelectedEvent = new EventEmitter<{option: any, message: any}>();
   @Output() speakTextEvent = new EventEmitter<string>();
   @Output() toggleRecordingEvent = new EventEmitter<void>();
+  @Output() modelChangeEvent = new EventEmitter<boolean>();
 
   inputMessage = '';
 
@@ -51,6 +53,11 @@ export class ChatComponent {
 
   toggleVoiceRecognition(): void {
     this.toggleRecordingEvent.emit();
+  }
+
+  onModelChange(event: any) {
+    // Emit the new model selection (true for Claude, false for DeepSeek)
+    this.modelChangeEvent.emit(event.target.value === 'claude');
   }
 
 

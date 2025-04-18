@@ -3,7 +3,6 @@ import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatIconModule} from "@angular/material/icon";
 import {MatButtonModule} from "@angular/material/button";
 import {MatInputModule} from "@angular/material/input";
-import {AnthropicService} from "../../services/anthropic-service.service";
 import {FormsModule} from "@angular/forms";
 import {OpenAI} from 'openai';
 import {deepseek} from "../../../environments/deepseek";
@@ -34,9 +33,9 @@ export class HomeComponent {
     dangerouslyAllowBrowser: true
   })
 
-  constructor(private anthropicService: AnthropicService) {}
+  constructor() {}
 
-  async sendMessage() {
+  /*async sendMessage() {
     if(!this.userInput.trim()) return;
 
     try {
@@ -45,7 +44,7 @@ export class HomeComponent {
     } catch (error) {
       console.error('Error:', error);
     }
-  }
+  }*/
 
   async callDeepSeekApi() {
      if (!this.userInput.trim()) return;

@@ -1,12 +1,15 @@
 import { Injectable } from '@angular/core';
+import Anthropic from '@anthropic-ai/sdk';
+import { environment } from "../../environments/environment";
+import {AnthropicChatAgentService} from "./anthropic-chat-agent.service";
+import {ChatResponse} from "./base-chat-agent.service";
 import {HttpClient} from "@angular/common/http";
-import {BaseChatAgentService, ChatResponse} from "./base-chat-agent.service";
+
 
 @Injectable({
   providedIn: 'root'
 })
-export class IterationAgentService extends BaseChatAgentService{
-
+export class AnthropicIterationAgentService extends AnthropicChatAgentService{
   private buttonLayout: any;
   private buttonParams: any;
 
@@ -15,7 +18,7 @@ export class IterationAgentService extends BaseChatAgentService{
   }
 
   protected override getSystemPromptPath(): string {
-    return '/assets/agents/theOnePrompt.txt'; // Change this to a txt file that is right.
+    return '/assets/agents/theOnePrompt.txt'; // Same prompt path as original
   }
 
   protected override getFallbackSystemPrompt(): string {
@@ -25,21 +28,17 @@ export class IterationAgentService extends BaseChatAgentService{
   protected override getWelcomeMessage(): string {
     return "Welcome! I'm your design consultant. How can I help you with your project today?";
   }
-  override async sendMessage(message: string): Promise<ChatResponse> {
-    // Log the current session ID before sending
-    console.log('ConsultantService sending message with sessionId:', this.sessionId);
 
-    // Ensure message is not null or undefined before passing to parent
+  override async sendMessage(message: string): Promise<ChatResponse> {
+    console.log('Anthropic service sending message with sessionId:', this.sessionId);
     return super.sendMessage(message || '');
   }
 
-  // In iteration-agent.service.ts
   extractScadParameters(responseText: string): {
     cleanedResponse: string,
     buttonLayout: number[][] | null,
     buttonParams: any
   } {
-    // Default return values
     let result = {
       cleanedResponse: responseText,
       buttonLayout: null as number[][] | null,
@@ -50,21 +49,17 @@ export class IterationAgentService extends BaseChatAgentService{
       try {
         // Look for button_layout section
         if (responseText.includes('button_layout')) {
-          // Find all numeric patterns that could represent button coordinates
           const buttonPattern = /\[\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)(?:\s*,\s*(-?\d+\.?\d*))?\s*\]/g;
           const buttons = [];
           let match;
 
-          // Extract all button matches from the text
           while ((match = buttonPattern.exec(responseText)) !== null) {
-            // Create button with x, y, size values (all required)
             const button = [
               parseFloat(match[1]),
               parseFloat(match[2]),
               parseFloat(match[3])
             ];
 
-            // Add width if it exists
             if (match[4]) {
               button.push(parseFloat(match[4]));
             }
@@ -77,28 +72,31 @@ export class IterationAgentService extends BaseChatAgentService{
           }
         }
 
-        // Find the button params section
         const buttonParamsMatch = responseText.match(/button_params\s*=\s*\[([\s\S]*?)\];/);
         if (buttonParamsMatch && buttonParamsMatch[1]) {
           const buttonParamsString = `[${buttonParamsMatch[1]}]`;
-          // Convert string representation to actual array
           result.buttonParams = new Function(`return ${buttonParamsString}`)();
         }
 
-        // Remove SCAD Parameters section but keep "Would you like to:" part
-        const scadSectionStart = responseText.indexOf('SCAD Parameters');
-        const wouldYouLikeIndex = responseText.indexOf('Would you like to:');
+        // Use a more aggressive approach with regex to remove the SCAD Parameters section
+        const cleanedText = responseText.replace(/## SCAD Parameters[\s\S]*?button_params.*?\];/s, '');
 
-        if (scadSectionStart !== -1 && wouldYouLikeIndex !== -1) {
-          // Combine the text before SCAD Parameters and after the button_params
-          result.cleanedResponse =
-            responseText.substring(0, scadSectionStart).trim() +
-            '\n\n' +
-            responseText.substring(wouldYouLikeIndex).trim();
+        // If that didn't work, try alternative regex patterns
+        if (cleanedText === responseText) {
+          // Try with just "SCAD Parameters" without the ##
+          result.cleanedResponse = responseText.replace(/SCAD Parameters[\s\S]*?button_params.*?\];/s, '');
+        } else {
+          result.cleanedResponse = cleanedText;
         }
+
+        // Clean up any leftover backticks code blocks that might be empty
+        result.cleanedResponse = result.cleanedResponse.replace(/```[\s]*```/g, '');
+
+        // Remove any trailing newlines and trim
+        result.cleanedResponse = result.cleanedResponse.trim();
+
       } catch (error) {
         console.error('Error extracting SCAD parameters:', error);
-        // If there's an error, return the original text
       }
     }
 

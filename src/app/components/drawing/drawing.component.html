@@ -1,6 +1,6 @@
-<!-- drawing.component.html -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=ink_eraser" />
 <div class="drawing-container">
-  <canvas #canvas class="drawing-canvas"
+  <canvas #canvas
           (mousedown)="startDrawing($event)"
           (mousemove)="draw($event)"
           (mouseup)="stopDrawing()"
@@ -8,17 +8,30 @@
           (touchstart)="startTouchDrawing($event)"
           (touchmove)="touchDraw($event)"
           (touchend)="stopDrawing()"
-          (touchcancel)="stopDrawing()">
+          class="drawing-canvas">
   </canvas>
 
   <div class="drawing-controls">
-    <button (click)="clearCanvas()" class="control-button">Clear</button>
-    <input type="color" [(ngModel)]="strokeColor" class="color-picker">
-    <select [(ngModel)]="lineWidth" class="line-width">
-      <option [value]="1">Thin</option>
-      <option [value]="3">Medium</option>
-      <option [value]="5">Thick</option>
-    </select>
-    <button (click)="submitDrawing()" class="control-button submit-button">Submit</button>
+    <div class="button-group">
+      <button class="control-button" (click)="undo()" [disabled]="currentActionIndex <= 0" title="Undo">
+        <span class="material-icons">undo</span>
+      </button>
+      <button class="control-button" (click)="redo()" [disabled]="currentActionIndex >= drawActions.length - 1" title="Redo">
+        <span class="material-icons">redo</span>
+      </button>
+      <button class="control-button" [class.active]="isEraser" (click)="toggleEraser()" title="Eraser">
+        <span class="material-symbols-outlined">ink_eraser</span>
+      </button>
+      <button class="control-button" (click)="clearCanvas()" title="Clear All">
+        <span class="material-icons">delete</span>
+      </button>
+    </div>
+
+    <div class="color-width-controls">
+      <input type="color" [(ngModel)]="strokeColor" [disabled]="isEraser">
+      <input type="range" min="1" max="20" [(ngModel)]="lineWidth">
+    </div>
+
+    <button class="control-button submit-button" (click)="submitDrawing()">Submit Drawing</button>
   </div>
 </div>

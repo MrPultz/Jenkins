@@ -7,7 +7,8 @@
     (sendMessageEvent)="onSendMessage($event)"
     (optionSelectedEvent)="onOptionSelected($event)"
     (speakTextEvent)="onSpeakText($event)"
-    (toggleRecordingEvent)="onToggleRecording()">
+    (toggleRecordingEvent)="onToggleRecording()"
+    (modelChangeEvent)="toggleModel($event)">
   </app-chat>
 
   <!-- The Preview Section - always in DOM but visibility controlled by CSS -->

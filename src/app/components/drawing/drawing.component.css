@@ -44,8 +44,23 @@
   font-size: 14px;
 }
 
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
 .control-button:hover {
   background-color: #ff5722;
+}
+
+.control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control-button.active {
+  background-color: #e0e0e0;
+  border-color: #999;
 }
 
 .color-picker,
@@ -68,3 +83,13 @@
 .submit-button:hover {
   background-color: #45a049;
 }
+
+ .material-symbols-outlined {
+   font-variation-settings:
+     'FILL' 0,
+     'wght' 400,
+     'GRAD' 0,
+     'opsz' 24
+ }
+
+

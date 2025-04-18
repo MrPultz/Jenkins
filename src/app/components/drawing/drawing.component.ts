@@ -24,6 +24,15 @@ export class DrawingComponent implements OnInit {
   strokeColor = '#000000';
   lineWidth = 3;
 
+
+  // Undo/Redo functionality
+  protected drawActions: ImageData[] = [];
+  protected currentActionIndex = -1;
+  private maxActions = 50;
+
+  // Eraser functionality
+  isEraser = false;
+
   ngOnInit() {
     const canvas = this.canvas.nativeElement;
     const context = canvas.getContext('2d');
@@ -41,6 +50,57 @@ export class DrawingComponent implements OnInit {
     });
 
     this.setupCursorTracking();
+
+    // save initial blank canvas state
+    this.saveCurrentState();
+  }
+
+  private saveCurrentState() {
+    // Don't save if we haven't initialized the canvas yet
+    if (!this.ctx) return;
+
+    const canvas = this.canvas.nativeElement;
+    const imageData = this.ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    // If we're not at the end of the actions array, remove future actions
+    if (this.currentActionIndex < this.drawActions.length - 1) {
+      this.drawActions = this.drawActions.slice(0, this.currentActionIndex + 1);
+    }
+
+    // Add new state to history
+    this.drawActions.push(imageData);
+    this.currentActionIndex++;
+
+    // Limit history size
+    if (this.drawActions.length > this.maxActions) {
+      this.drawActions.shift();
+      this.currentActionIndex--;
+    }
+  }
+
+  undo() {
+    if (this.currentActionIndex > 0) {
+      this.currentActionIndex--;
+      this.restoreState();
+    }
+  }
+
+  redo() {
+    if (this.currentActionIndex < this.drawActions.length - 1) {
+      this.currentActionIndex++;
+      this.restoreState();
+    }
+  }
+
+
+  private restoreState() {
+    const canvas = this.canvas.nativeElement;
+    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+    this.ctx.putImageData(this.drawActions[this.currentActionIndex], 0, 0);
+  }
+
+  toggleEraser() {
+    this.isEraser = !this.isEraser;
   }
 
   private setupCursorTracking() {
@@ -148,6 +208,15 @@ export class DrawingComponent implements OnInit {
     this.ctx.beginPath();
     this.ctx.moveTo(this.lastX, this.lastY);
     this.ctx.lineTo(currentX, currentY);
+
+    if (this.isEraser) {
+      this.ctx.globalCompositeOperation = 'destination-out';
+      this.ctx.strokeStyle = 'rgba(255,255,255,1)';
+    } else {
+      this.ctx.globalCompositeOperation = 'source-over';
+      this.ctx.strokeStyle = this.strokeColor;
+    }
+
     this.ctx.strokeStyle = this.strokeColor;
     this.ctx.lineWidth = this.lineWidth;
     this.ctx.stroke();
@@ -180,6 +249,15 @@ export class DrawingComponent implements OnInit {
     this.ctx.beginPath();
     this.ctx.moveTo(this.lastX, this.lastY);
     this.ctx.lineTo(currentX, currentY);
+
+    if (this.isEraser) {
+      this.ctx.globalCompositeOperation = 'destination-out';
+      this.ctx.strokeStyle = 'rgba(255,255,255,1)';
+    } else {
+      this.ctx.globalCompositeOperation = 'source-over';
+      this.ctx.strokeStyle = this.strokeColor;
+    }
+
     this.ctx.strokeStyle = this.strokeColor;
     this.ctx.lineWidth = this.lineWidth;
     this.ctx.stroke();
@@ -188,14 +266,19 @@ export class DrawingComponent implements OnInit {
     this.lastY = currentY;
   }
 
+  // Save state when stopping drawing
   stopDrawing() {
-    this.isDrawing = false;
-    this.ctx.closePath();
+    if (this.isDrawing) {
+      this.isDrawing = false;
+      this.ctx.closePath();
+      this.saveCurrentState();
+    }
   }
 
   clearCanvas() {
     const canvas = this.canvas.nativeElement;
     this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+    this.saveCurrentState();
   }
 
   submitDrawing() {
