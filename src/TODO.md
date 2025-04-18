@@ -9,6 +9,7 @@
 - [X] Delete old lines (maybe arrows forwards and backwards)
 - [X] Change to eraser.
 - [X] Tests: Can make a keyboard/remote from drawing. Can do it from text. Can make both circle and square keys. 
+- [ ] Change 3D viewer so easier to see what it made (maybe material or lighting)
 
 
 ### TODO for moving another object
