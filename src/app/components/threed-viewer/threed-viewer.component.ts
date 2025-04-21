@@ -1,4 +1,16 @@
-import {AfterViewInit, Component, Input, ElementRef, HostListener, OnDestroy, SimpleChanges, OnInit, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  Input,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  SimpleChanges,
+  OnInit,
+  ViewChild,
+  Output,
+  EventEmitter,
+} from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
@@ -14,6 +26,7 @@ import {Router} from "@angular/router";
 })
 export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() modelUrl: string | null = null;
+  @Output() switchModelEvent = new EventEmitter<void>();
 
   @ViewChild('mainCanvas') mainCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('miniViewport') miniViewportRef!: ElementRef<HTMLDivElement>;
@@ -79,6 +92,10 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   navigateToScadEditor(): void {
     this.router.navigate(['/threeupload']);
+  }
+
+  switchToModelEditor(): void {
+    this.switchModelEvent.emit();
   }
 
 
@@ -211,15 +228,27 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private createModelFromGeometry(geometry: THREE.BufferGeometry) {
     // Create material for the STL model
-    const material = new THREE.MeshPhongMaterial({
+    const mainMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xAAAAAA,
-      specular: 0x111111,
-      shininess: 200,
-      flatShading: true
+      metalness: 0.2,
+      roughness: 0.5,
+      clearcoat: 0.3,
+      clearcoatRoughness: 0.25,
+      reflectivity: 0.5
+    });
+
+    // Create a wireframe material to overlay
+    const wireframeMaterial = new THREE.MeshBasicMaterial({
+      color: 0xFFFFFF,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.15
     });
 
     // Create mesh with loaded geometry and material
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, mainMaterial);
+    const wireframe = new THREE.Mesh(geometry, wireframeMaterial);
+
     mesh.castShadow = true;
     mesh.receiveShadow = true;
 
@@ -254,6 +283,8 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.model = mesh;
     this.scene.add(mesh);
 
+    this.enhanceLighting();
+
     // Add debugging information
     console.log('Model added to scene successfully');
     console.log('Model position:', mesh.position);
@@ -271,6 +302,50 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     // Point the camera and controls at the object
     this.controls.target.copy(new THREE.Vector3(0, 0, 0));
     this.controls.update();
+  }
+
+  private enhanceLighting() {
+    // Remove existing lights
+    this.scene.children.forEach(child => {
+      if (child instanceof THREE.Light) {
+        this.scene.remove(child);
+      }
+    });
+
+    // Add enhanced lighting setup
+    // Ambient light for base illumination
+    const ambientLight = new THREE.AmbientLight(0xcccccc, 0.4);
+    this.scene.add(ambientLight);
+
+    // Main directional light with shadows
+    const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    mainLight.position.set(5, 10, 7);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.width = 1024;
+    mainLight.shadow.mapSize.height = 1024;
+    mainLight.shadow.camera.near = 0.5;
+    mainLight.shadow.camera.far = 50;
+    mainLight.shadow.bias = -0.001;
+    this.scene.add(mainLight);
+
+    // Fill light from opposite direction
+    const fillLight = new THREE.DirectionalLight(0xffffcc, 0.5);
+    fillLight.position.set(-5, 2, -5);
+    this.scene.add(fillLight);
+
+    // Soft spotlight for dramatic effect
+    const spotLight = new THREE.SpotLight(0xffffff, 0.5);
+    spotLight.position.set(0, 10, 0);
+    spotLight.angle = Math.PI / 6;
+    spotLight.penumbra = 0.2;
+    spotLight.decay = 1;
+    spotLight.distance = 30;
+    spotLight.castShadow = true;
+    this.scene.add(spotLight);
+
+    // Enable shadow mapping on renderer
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   }
 
 // Add this new method to reset the camera view

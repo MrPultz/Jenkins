@@ -8,6 +8,7 @@ import {DrawingComponent} from "../../components/drawing/drawing.component";
 import {IterationAgentService} from "../../services/iteration-agent.service";
 import {ScadConvertService} from "../../services/scad-convert.service";
 import {AnthropicIterationAgentService} from "../../services/anthropic-iteration-agent.service";
+import {ThreeWithUploadComponent} from "../../components/three-with-upload/three-with-upload.component";
 
 interface ChatMessage {
   id: number;
@@ -30,6 +31,7 @@ interface ChatMessage {
     ThreedViewerComponent,
     ChatComponent,
     DrawingComponent,
+    ThreeWithUploadComponent,
   ],
   templateUrl: './main.component.html',
   styleUrl: './main.component.css'
@@ -42,6 +44,7 @@ export class MainComponent implements OnInit, OnDestroy{
   isSpeaking = false;
   isRecording = false;
   threeDAgent = false;
+  modelEditor = false;
   isDrawing = true;
   modelUrl: string | null = null;
 
@@ -393,4 +396,40 @@ export class MainComponent implements OnInit, OnDestroy{
         }
       });
   }
+
+  // Switch to editor
+  onSwitchToModelEditor(): void {
+    this.useAnthropicModel = false;
+
+    // Keep the 3D view active
+    this.threeDAgent = false;
+    this.isDrawing = false;
+    this.modelEditor = true;
+
+
+    // Optionally, add a message to the chat history
+    const systemMessage = {
+      id: Date.now(),
+      text: 'Switched to 3D model editing mode. You can now make changes to your model.',
+      isUser: false,
+      isSystem: true,
+      needMoreInformation: false,
+      timestamp: new Date()
+    };
+
+    this.messages = [...this.messages, systemMessage];
+
+  }
+
+  extractModelGeometry(): any {
+    // Logic to extract the base model geometry from the current 3D model
+    // This is a placeholder and should be replaced with actual extraction logic
+    return {
+      width: 100,
+      height: 50,
+      depth: 30,
+      components: []
+    };
+  }
+
 }

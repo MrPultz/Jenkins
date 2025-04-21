@@ -32,8 +32,14 @@
       <app-threed-viewer
         *ngIf="threeDAgent"
         [modelUrl]="modelUrl"
+        (switchModelEvent)="onSwitchToModelEditor()"
         style="display: block; height: 100%; width: 100%;">
       </app-threed-viewer>
+
+      <app-three-with-upload
+      *ngIf="modelEditor">
+
+      </app-three-with-upload>
     </div>
   </div>
 </div>

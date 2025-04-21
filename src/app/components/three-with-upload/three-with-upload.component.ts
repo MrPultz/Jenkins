@@ -1,16 +1,15 @@
-import { Component, ElementRef, ViewChild, OnInit } from '@angular/core';
+import { Component, ElementRef, ViewChild, OnInit, Input, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 
 // Define the correct type for transform modes
 type TransformControlsMode = 'translate' | 'rotate' | 'scale';
-
-
 
 @Component({
   selector: 'app-three-with-upload',
@@ -19,9 +18,15 @@ type TransformControlsMode = 'translate' | 'rotate' | 'scale';
   templateUrl: './three-with-upload.component.html',
   styleUrl: './three-with-upload.component.css'
 })
-export class ThreeWithUploadComponent implements OnInit{
+export class ThreeWithUploadComponent implements OnInit {
 
-  @ViewChild('rendererContainer',{static: true}) rendererContainer!: ElementRef;
+  @ViewChild('rendererContainer', { static: true }) rendererContainer!: ElementRef;
+
+  // Add this to the component class properties
+  @Output() switchAgentEvent = new EventEmitter<void>();
+
+  // Input to receive model from previous page
+  @Input() baseModelGeometry?: THREE.BufferGeometry;
 
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -35,43 +40,63 @@ export class ThreeWithUploadComponent implements OnInit{
   private mouse = new THREE.Vector2();
   private placementMode = false;
   private baseMeshBoundingBox: THREE.Box3 | null = null;
-  private boundingBoxHelper?: THREE.LineSegments |THREE.Box3Helper;
+  private boundingBoxHelper?: THREE.LineSegments | THREE.Box3Helper;
   private lastValidTransform = {
     position: new THREE.Vector3(),
-    scale: new THREE.Vector3(1,1,1),
+    scale: new THREE.Vector3(1, 1, 1),
     rotation: new THREE.Euler()
   };
 
-
-  constructor() {
-  }
+  constructor() {}
 
   ngOnInit() {
-    // Just initialize the scene here
     this.initScene();
   }
 
   ngAfterViewInit() {
-    // Delay loading the default model slightly to ensure scene is ready
     setTimeout(() => {
-      this.loadDefaultModel();
+      this.loadBaseModel();
+      // Load the unicorn horn after a small delay to ensure scene is ready
+      setTimeout(() => {
+        this.loadUnicornHorn();
+      }, 300);
     }, 100);
   }
 
   private initScene(): void {
-    // Create scene
+    // Create scene with improved lighting for better visibility
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x2a2a2a);
 
-
-
-    // Add lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    // Enhanced lighting setup for better visibility of 3D models
+    const ambientLight = new THREE.AmbientLight(0xcccccc, 0.4);
     this.scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(1, 1, 1);
-    this.scene.add(directionalLight);
+    // Main directional light with shadows
+    const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    mainLight.position.set(5, 10, 7);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.width = 1024;
+    mainLight.shadow.mapSize.height = 1024;
+    mainLight.shadow.camera.near = 0.5;
+    mainLight.shadow.camera.far = 50;
+    mainLight.shadow.bias = -0.001;
+    this.scene.add(mainLight);
+
+    // Fill light from opposite direction
+    const fillLight = new THREE.DirectionalLight(0xffffcc, 0.5);
+    fillLight.position.set(-5, 2, -5);
+    this.scene.add(fillLight);
+
+    // Soft spotlight for dramatic effect
+    const spotLight = new THREE.SpotLight(0xffffff, 0.5);
+    spotLight.position.set(0, 10, 0);
+    spotLight.angle = Math.PI / 6;
+    spotLight.penumbra = 0.2;
+    spotLight.decay = 1;
+    spotLight.distance = 30;
+    spotLight.castShadow = true;
+    this.scene.add(spotLight);
 
     // Setup camera
     this.camera = new THREE.PerspectiveCamera(
@@ -82,26 +107,40 @@ export class ThreeWithUploadComponent implements OnInit{
     );
     this.camera.position.z = 10;
 
-    // Setup renderer
+    // Setup renderer with shadow support
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(
       this.rendererContainer.nativeElement.clientWidth,
       this.rendererContainer.nativeElement.clientHeight
     );
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.rendererContainer.nativeElement.appendChild(this.renderer.domElement);
 
     // Add orbit controls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
 
-    // Add  grid
-    const gridHelper = new THREE.GridHelper(20,20);
+    // Add grid
+    const gridHelper = new THREE.GridHelper(20, 20);
     this.scene.add(gridHelper);
 
     // Add event listener for placement
+    // Add event listener for placement and clicking on base mesh
     this.renderer.domElement.addEventListener('mousemove', this.onMouseMove.bind(this));
-    this.renderer.domElement.addEventListener('click', this.onMouseClick.bind(this));
-
+    this.renderer.domElement.addEventListener('click', (event) => {
+      // Left click
+      if (event.button === 0) {
+        // Check if we're using transform controls
+        if (this.transformControls && this.transformControls.object === this.placementMesh) {
+          // If transform controls are active, handle click on base mesh
+          this.onBaseModelClick(event);
+        } else if (this.placementMode) {
+          // If in placement mode, finalize placement
+          this.onMouseClick(event);
+        }
+      }
+    });
 
     // Start animation loop
     this.animate();
@@ -111,8 +150,6 @@ export class ThreeWithUploadComponent implements OnInit{
 
     // Initialize transform controls
     this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
-
-    // Make controls more responsive
     this.transformControls.setSize(1.2); // Slightly larger controls
 
     // Add change listener
@@ -127,14 +164,187 @@ export class ThreeWithUploadComponent implements OnInit{
       this.controls.enabled = !event.value;
     });
 
+    // Add the transform controls to the scene with proper type casting
     this.scene.add(this.transformControls.getHelper());
     this.addKeyboardShortcuts();
+  }
+
+  private loadBaseModel(): void {
+    // If we received a model from the previous page, use it
+    if (this.baseModelGeometry) {
+      const material = new THREE.MeshPhysicalMaterial({
+        color: 0xAAAAAA,
+        metalness: 0.2,
+        roughness: 0.5,
+        clearcoat: 0.3,
+        clearcoatRoughness: 0.25,
+        reflectivity: 0.5
+      });
+
+      this.baseMesh = new THREE.Mesh(this.baseModelGeometry, material);
+      this.baseMesh.castShadow = true;
+      this.baseMesh.receiveShadow = true;
+      this.scene.add(this.baseMesh);
+    } else {
+      // Use default cube as base mesh
+      const geometry = new THREE.BoxGeometry(5, 1, 5);
+      const material = new THREE.MeshPhysicalMaterial({
+        color: 0xAAAAAA,
+        metalness: 0.2,
+        roughness: 0.5,
+        clearcoat: 0.3,
+        clearcoatRoughness: 0.25,
+        reflectivity: 0.5
+      });
+
+      this.baseMesh = new THREE.Mesh(geometry, material);
+      this.baseMesh.castShadow = true;
+      this.baseMesh.receiveShadow = true;
+      this.scene.add(this.baseMesh);
+    }
+
+    this.updateBaseMeshBoundingBox();
+    this.fitCameraToObject(this.baseMesh);
+  }
+
+  private loadUnicornHorn(): void {
+    const fbxLoader = new FBXLoader();
+
+    // Load the unicorn horn from assets
+    fbxLoader.load('assets/previewModel/unicornHorn.fbx', (object) => {
+      // Remove previous placement mesh if exists
+      if (this.placementMesh) {
+        this.scene.remove(this.placementMesh);
+        this.transformControls.detach();
+      }
+
+      this.placementMesh = object;
+
+      // Apply material with wireframe overlay for better visibility
+      const mainMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xFF4000,
+        metalness: 0.2,
+        roughness: 0.5,
+        clearcoat: 0.3,
+        clearcoatRoughness: 0.25,
+        reflectivity: 0.5,
+        transparent: true,
+        opacity: 0.8
+      });
+
+      // Create a wireframe material
+      const wireframeMaterial = new THREE.MeshBasicMaterial({
+        color: 0xFFFFFF,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.15
+      });
+
+      // Apply materials without creating infinite recursion
+      object.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          // Apply main material directly
+          child.material = mainMaterial;
+          child.castShadow = true;
+
+          // Create a separate wireframe mesh instead of adding as a child
+          const wireframe = new THREE.Mesh(child.geometry.clone(), wireframeMaterial);
+          wireframe.position.copy(child.position);
+          wireframe.rotation.copy(child.rotation);
+          wireframe.scale.copy(child.scale);
+          object.add(wireframe);
+        }
+      });
+
+      // Calculate size and bounding box
+      const placementBox = new THREE.Box3().setFromObject(this.placementMesh);
+      const placementSize = placementBox.getSize(new THREE.Vector3());
+      const placementHeight = placementSize.y;
+
+      // Scale the horn to a reasonable size relative to the base
+      if (this.baseMesh) {
+        const baseBox = new THREE.Box3().setFromObject(this.baseMesh);
+        const baseSize = baseBox.getSize(new THREE.Vector3());
+        const desiredHornSize = Math.min(baseSize.x, baseSize.z) * 0.3; // 30% of the base dimension
+
+        // Scale the horn
+        const scaleFactor = desiredHornSize / Math.max(placementSize.x, placementSize.z);
+        object.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+        // Update bounding box after scaling
+        placementBox.setFromObject(this.placementMesh);
+
+        // Position at the center of the base mesh's top face
+        this.placementMesh.position.set(
+          baseBox.getCenter(new THREE.Vector3()).x,
+          baseBox.max.y + (placementBox.getSize(new THREE.Vector3()).y / 2), // Position on top
+          baseBox.getCenter(new THREE.Vector3()).z
+        );
+      } else {
+        // Fallback position if no base mesh
+        this.placementMesh.position.set(0, placementHeight / 2, 0);
+      }
+
+      this.scene.add(this.placementMesh);
+
+      // With these lines
+      if (this.placementMesh) {
+        this.placementMesh = this.setPivotToBottomCenter(this.placementMesh);
+
+        // Make sure the transform controls are attached after the pivot is set
+        if (this.transformControls && this.placementMesh) {
+          this.transformControls.attach(this.placementMesh);
+        }
+      }
+
+      // Initialize the last valid transform
+      this.lastValidTransform.position.copy(this.placementMesh.position);
+      this.lastValidTransform.scale.copy(this.placementMesh.scale);
+      this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
+
+      // Attach transform controls to the placement mesh
+      this.transformControls.attach(this.placementMesh);
+
+      // Enable placement mode
+      this.placementMode = true;
+
+      // Set transform mode to translate by default
+      this.transformControls.setMode('translate');
+
+    }, undefined, (error) => {
+      console.error('Error loading unicorn horn:', error);
+
+      // Fallback: create a simple cone as unicorn horn
+      const geometry = new THREE.ConeGeometry(0.5, 2, 16);
+      const material = new THREE.MeshPhysicalMaterial({
+        color: 0xFF4000,
+        metalness: 0.2,
+        roughness: 0.5
+      });
+
+      this.placementMesh = new THREE.Mesh(geometry, material);
+      this.placementMesh.castShadow = true;
+
+      // Position on top of base mesh
+      if (this.baseMesh) {
+        const baseBox = new THREE.Box3().setFromObject(this.baseMesh);
+        this.placementMesh.position.set(
+          baseBox.getCenter(new THREE.Vector3()).x,
+          baseBox.max.y + 1, // Position on top
+          baseBox.getCenter(new THREE.Vector3()).z
+        );
+      }
+
+      this.scene.add(this.placementMesh);
+      this.transformControls.attach(this.placementMesh);
+      this.placementMode = true;
+    });
   }
 
   private animate(): void {
     requestAnimationFrame(() => this.animate());
 
-    // Set bounding box to render on top of other objects (if it exists)
+    // Set bounding box to render on top of other objects
     if (this.boundingBoxHelper) {
       this.boundingBoxHelper.renderOrder = 999;
     }
@@ -142,6 +352,13 @@ export class ThreeWithUploadComponent implements OnInit{
     // Continuous boundary check during animation
     if (this.placementMesh && this.transformControls.object === this.placementMesh) {
       this.validatePlacementPosition();
+    }
+
+    if (this.transformControls && this.transformControls.object === this.placementMesh) {
+      // When transform controls are active, highlight the base mesh
+      this.setBaseMeshHighlight(true);
+    } else {
+      this.setBaseMeshHighlight(false);
     }
 
     this.controls.update();
@@ -155,19 +372,6 @@ export class ThreeWithUploadComponent implements OnInit{
       this.rendererContainer.nativeElement.clientWidth,
       this.rendererContainer.nativeElement.clientHeight
     );
-  }
-
-  private loadDefaultModel(): void {
-    // Load default cube as base mesh
-    const geometry = new THREE.BoxGeometry(5, 1, 5);
-    const material = new THREE.MeshStandardMaterial({ color: 0x808080 });
-    this.baseMesh = new THREE.Mesh(geometry, material);
-    this.scene.add(this.baseMesh);
-
-    this.updateBaseMeshBoundingBox();
-
-    // Center camera on object
-    this.fitCameraToObject(this.baseMesh);
   }
 
   private fitCameraToObject(object: THREE.Object3D): void {
@@ -185,152 +389,6 @@ export class ThreeWithUploadComponent implements OnInit{
     this.controls.update();
   }
 
-  private setMaterial(object: THREE.Mesh | THREE.Group, material: THREE.Material): void {
-    if (object instanceof THREE.Mesh) {
-      object.material = material;
-    } else if (object instanceof THREE.Group) {
-      object.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.material = material;
-        }
-      });
-    }
-  }
-
-  uploadBaseSTL(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if(!input.files || input.files.length === 0) return;
-
-    const file = input.files[0];
-    this.loadModel(file, (mesh) => {
-      // remove previous base mesh if exists
-      if(this.baseMesh) {
-        this.scene.remove(this.baseMesh);
-      }
-
-      this.baseMesh = mesh;
-      // Update bounding box whenbase mesh changes
-      this.updateBaseMeshBoundingBox();
-
-      const material = new THREE.MeshStandardMaterial({
-        color: 0x808080,
-        side: THREE.DoubleSide
-      });
-      this.setMaterial(this.baseMesh, material);
-
-      this.scene.add(this.baseMesh);
-      this.fitCameraToObject(this.baseMesh);
-    });
-  }
-
-  uploadPlacementSTL(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-
-    const file = input.files[0];
-    this.loadModel(file, (mesh) => {
-      // Remove previous placement mesh if exists
-      if (this.placementMesh) {
-        this.scene.remove(this.placementMesh);
-        this.transformControls.detach();
-      }
-
-      this.placementMesh = mesh;
-      const material = new THREE.MeshStandardMaterial({
-        color: 0xff4000,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.7
-      });
-      this.setMaterial(this.placementMesh, material);
-
-      // Calculate the size of the placement mesh
-      const placementBox = new THREE.Box3().setFromObject(this.placementMesh);
-      const placementSize = placementBox.getSize(new THREE.Vector3());
-      const placementHeight = placementSize.y;
-
-      // Position directly on top of the base mesh
-      if (this.baseMesh) {
-        const baseBox = new THREE.Box3().setFromObject(this.baseMesh);
-        // Position at the center of the base mesh's top face
-        this.placementMesh.position.set(
-          baseBox.getCenter(new THREE.Vector3()).x,
-          baseBox.max.y + placementHeight/2, // Position exactly on top
-          baseBox.getCenter(new THREE.Vector3()).z
-        );
-      } else {
-        // Fallback position if no base mesh
-        this.placementMesh.position.set(0, placementHeight/2, 0);
-      }
-
-      this.scene.add(this.placementMesh);
-
-      // Initialize the last valid transform
-      this.lastValidTransform.position.copy(this.placementMesh.position);
-      this.lastValidTransform.scale.copy(this.placementMesh.scale);
-      this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
-
-      // Attach transform controls to the placement mesh
-      this.transformControls.attach(this.placementMesh);
-
-      // Enable placement mode
-      this.placementMode = true;
-
-      // Set transform mode to translate by default
-      this.transformControls.setMode('translate');
-
-      // Only adjust if needed AFTER initial placement
-      if (!this.isPlacementWithinBaseBounds()) {
-        console.log('Warning: Object is larger than bounding box. Starting in invalid position.');
-        // Don't auto-scale here - let the user handle it by moving/scaling manually
-      }
-    });
-  }
-
-  private loadModel(file: File, callback: (mesh: THREE.Mesh | THREE.Group) => void): void {
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      try {
-        if (fileExtension === 'stl') {
-          const loader = new STLLoader();
-          const geometry = loader.parse(e.target?.result as ArrayBuffer);
-
-          // Center geometry at origin
-          geometry.computeBoundingBox();
-          const boundingBox = geometry.boundingBox as THREE.Box3;
-          const center = boundingBox.getCenter(new THREE.Vector3());
-          geometry.translate(-center.x, -center.y, -center.z);
-
-          const mesh = new THREE.Mesh(geometry);
-          callback(mesh);
-        }
-        else if (fileExtension === 'fbx') {
-          const loader = new FBXLoader();
-
-          // FBXLoader.parse() expects only 2 arguments in newer versions
-          const object = loader.parse(e.target?.result as ArrayBuffer, '');
-
-          // Center the object
-          const box = new THREE.Box3().setFromObject(object);
-          const center = box.getCenter(new THREE.Vector3());
-          object.position.sub(center);
-
-          // FBX often needs scaling
-          const scale = 0.01; // Adjust scale as needed
-          object.scale.set(scale, scale, scale);
-
-          callback(object);
-        }
-      } catch (error) {
-        console.error('Error loading model:', error);
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
-  }
-
   private onMouseMove(event: MouseEvent): void {
     // Skip if transform controls are active or no placement mode
     if (this.transformControls.object === this.placementMesh ||
@@ -345,7 +403,7 @@ export class ThreeWithUploadComponent implements OnInit{
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
     // Check for intersections with base mesh
-    const intersects = this.raycaster.intersectObject(this.baseMesh);
+    const intersects = this.raycaster.intersectObject(this.baseMesh, true);
     if (intersects.length > 0) {
       const point = intersects[0].point;
       const oldPos = this.placementMesh.position.clone();
@@ -373,24 +431,75 @@ export class ThreeWithUploadComponent implements OnInit{
   private onMouseClick(event: MouseEvent): void {
     if (!this.placementMode || !this.placementMesh) return;
 
-    // If not using transform controls, handle as before
-    if (!this.transformControls.object) {
-      // Finalize placement
-      this.placementMode = false;
+    // Finalize placement
+    this.placementMode = false;
 
-      // Change material to indicate it's placed
-      const material = new THREE.MeshStandardMaterial({
-        color: 0x0088ff,
-        opacity: 1.0,
-        transparent: false
+    // Change material to indicate it's placed
+    const material = new THREE.MeshPhysicalMaterial({
+      color: 0x0088ff,
+      metalness: 0.2,
+      roughness: 0.5,
+      clearcoat: 0.3
+    });
+
+    this.placementMesh.traverse((child) => {
+      if (child instanceof THREE.Mesh &&
+        !(child.material instanceof THREE.MeshBasicMaterial && child.material.wireframe)) {
+        child.material = material;
+      }
+    });
+
+    // Attach transform controls to the placement mesh if not already attached
+    if (this.transformControls && this.transformControls.object !== this.placementMesh) {
+      this.transformControls.attach(this.placementMesh);
+    }
+  }
+
+  private setMaterial(object: THREE.Mesh | THREE.Group, material: THREE.Material): void {
+    if (object instanceof THREE.Mesh) {
+      object.material = material;
+    } else if (object instanceof THREE.Group) {
+      object.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.material = material;
+        }
       });
-      this.setMaterial(this.placementMesh, material);
     }
   }
 
   togglePlacementMode(): void {
     if (!this.placementMesh) return;
     this.placementMode = !this.placementMode;
+  }
+
+  // Add this method to your component
+  private setBaseMeshHighlight(highlight: boolean): void {
+    if (!this.baseMesh) return;
+
+    this.baseMesh.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (highlight) {
+          // Add subtle glow or highlight effect
+          child.material = new THREE.MeshPhysicalMaterial({
+            color: 0xAAAAFF,
+            metalness: 0.2,
+            roughness: 0.5,
+            clearcoat: 0.3,
+            clearcoatRoughness: 0.25,
+            emissive: 0x222244
+          });
+        } else {
+          // Reset to normal material
+          child.material = new THREE.MeshPhysicalMaterial({
+            color: 0xAAAAAA,
+            metalness: 0.2,
+            roughness: 0.5,
+            clearcoat: 0.3,
+            clearcoatRoughness: 0.25
+          });
+        }
+      }
+    });
   }
 
   exportCombined(): void {
@@ -491,13 +600,12 @@ export class ThreeWithUploadComponent implements OnInit{
     const edges = new THREE.EdgesGeometry(boxGeometry);
     const lineMaterial = new THREE.LineBasicMaterial({
       color: 0xff0000, // Bright red for visibility
-      linewidth: 3
+      linewidth: 2
     });
 
     this.boundingBoxHelper = new THREE.LineSegments(edges, lineMaterial);
 
     // Position the bounding box on the top face of the base mesh
-    // For your default box that's 1 unit tall, this would put it 0.5 + 0.05 = 0.55 units above center
     const yOffset = size.y * 0.55; // Position slightly above top face
     this.boundingBoxHelper.position.set(
       center.x,
@@ -509,13 +617,6 @@ export class ThreeWithUploadComponent implements OnInit{
     this.boundingBoxHelper.renderOrder = 999;
     this.boundingBoxHelper.visible = true;
     this.scene.add(this.boundingBoxHelper);
-
-    // Log the position for debugging
-    console.log('Custom Bounding Box created at:',
-      `x: ${this.boundingBoxHelper.position.x}, ` +
-      `y: ${this.boundingBoxHelper.position.y}, ` +
-      `z: ${this.boundingBoxHelper.position.z}`);
-    console.log('Base mesh height:', size.y);
   }
 
   private isPlacementWithinBaseBounds(): boolean {
@@ -552,14 +653,148 @@ export class ThreeWithUploadComponent implements OnInit{
   toggleBoundingBoxVisibility(): void {
     if (this.boundingBoxHelper) {
       this.boundingBoxHelper.visible = !this.boundingBoxHelper.visible;
-      console.log('Bounding box visibility:', this.boundingBoxHelper.visible);
 
       // Force a render
       this.renderer.render(this.scene, this.camera);
     } else {
       // If no box exists, create one
       this.updateBaseMeshBoundingBox();
-      console.log('Created new bounding box');
+    }
+  }
+
+
+// Add this method to the component class
+  switchAgent(): void {
+    this.switchAgentEvent.emit();
+  }
+
+  // Add this method to set the pivot point at the bottom center
+  private setPivotToBottomCenter(object: THREE.Object3D): THREE.Group {
+    if (!object) {
+      // Create and return an empty group as fallback
+      const emptyGroup = new THREE.Group();
+      this.scene.add(emptyGroup);
+      return emptyGroup;
+    }
+
+    // Create a bounding box for the object
+    const boundingBox = new THREE.Box3().setFromObject(object);
+    const center = boundingBox.getCenter(new THREE.Vector3());
+    const size = boundingBox.getSize(new THREE.Vector3());
+
+    // Create a pivot group
+    const pivotGroup = new THREE.Group();
+    this.scene.add(pivotGroup);
+
+    // Store original position
+    const originalPosition = object.position.clone();
+
+    // Remove from scene to avoid duplicates
+    this.scene.remove(object);
+
+    // Add object to pivot group
+    pivotGroup.add(object);
+
+    // Position object within group so its bottom center is at group's origin
+    object.position.set(
+      0,
+      -boundingBox.min.y + originalPosition.y,
+      0
+    );
+
+    // Position pivot group at the original object position
+    pivotGroup.position.copy(originalPosition);
+
+    // Visual indicator for pivot point (optional)
+    const pivotMarker = new THREE.Mesh(
+      new THREE.SphereGeometry(0.1, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xffff00 })
+    );
+    pivotGroup.add(pivotMarker);
+
+    return pivotGroup;
+  }
+
+  // Add this method to your ThreeWithUploadComponent class
+  private onBaseModelClick(event: MouseEvent): void {
+    if (!this.baseMesh || !this.placementMesh) return;
+
+    // Calculate mouse position in normalized device coordinates
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Update raycaster
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+
+    // Check for intersections with base mesh only
+    const intersects = this.raycaster.intersectObject(this.baseMesh, true);
+
+    if (intersects.length > 0) {
+      const intersect = intersects[0];
+      const point = intersect.point;
+      const face = intersect.face;
+
+      if (face) {
+        // Get the normal of the clicked face
+        const normal = face.normal.clone();
+
+        // Transform the normal to world coordinates if necessary
+        if (intersect.object.parent) {
+          const normalMatrix = new THREE.Matrix3().getNormalMatrix(intersect.object.matrixWorld);
+          normal.applyMatrix3(normalMatrix).normalize();
+        }
+
+        // Save current position and rotation in case we need to revert
+        const oldPosition = this.placementMesh.position.clone();
+        const oldQuaternion = this.placementMesh.quaternion.clone();
+
+        // Position the pivot at the intersection point
+        this.placementMesh.position.copy(point);
+
+        // Calculate rotation to align with the face normal
+        const upVector = new THREE.Vector3(0, 1, 0);
+
+        if (Math.abs(normal.dot(upVector)) > 0.99) {
+          // If normal is already parallel to up vector, don't rotate
+          this.placementMesh.rotation.set(0, 0, 0);
+        } else {
+          // Get rotation axis and angle
+          const axis = new THREE.Vector3().crossVectors(upVector, normal).normalize();
+          const angle = Math.acos(upVector.dot(normal));
+
+          // Convert to quaternion
+          const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+          this.placementMesh.quaternion.copy(quaternion);
+        }
+
+        // Check if the new position would be within bounds
+        if (!this.isPlacementWithinBaseBounds()) {
+          // Revert to the previous position and rotation
+          this.placementMesh.position.copy(oldPosition);
+          this.placementMesh.quaternion.copy(oldQuaternion);
+          console.error("Cannot place object outside the base model boundaries.");
+
+          // Visual feedback - briefly flash the bounding box
+          if (this.boundingBoxHelper) {
+            const originalMaterial = (this.boundingBoxHelper as THREE.LineSegments).material;
+            const flashMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 3 });
+            (this.boundingBoxHelper as THREE.LineSegments).material = flashMaterial;
+
+            setTimeout(() => {
+              if (this.boundingBoxHelper) {
+                (this.boundingBoxHelper as THREE.LineSegments).material = originalMaterial;
+              }
+            }, 300);
+          }
+        } else {
+          // Save the current position as the last valid one
+          this.lastValidTransform.position.copy(this.placementMesh.position);
+          this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
+        }
+      }
+    } else {
+      console.error("Click on the base model to place the object.");
     }
   }
 

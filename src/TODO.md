@@ -9,18 +9,19 @@
 - [X] Delete old lines (maybe arrows forwards and backwards)
 - [X] Change to eraser.
 - [X] Tests: Can make a keyboard/remote from drawing. Can do it from text. Can make both circle and square keys. 
-- [ ] Change 3D viewer so easier to see what it made (maybe material or lighting)
+- [X] Change 3D viewer so easier to see what it made (maybe material or lighting)
 
 
 ### TODO for moving another object
-- [ ] Make other Object (horn just be there)
-- [ ] Create a pivot for the uploaded object
+- [X] Make other Object (horn just be there)
+- [X] Create a pivot for the uploaded object
+- [X] See if we can click on a face and move the object to that face
+- [ ] Make bounding box for the first object (Generated Object) -> Can't do this until we have made prompt engineering
+- [X] Make sure the pivot is always touching the surface of the other object
 - [ ] Be able to write to the chat what to do with that object (convert the result to xyz that can be changed in the code and use with live update viewer)
-- [ ] Make bounding box for the first object
-- [ ] Make sure the pivot is always touching the surface of the other object
 - [ ] Testing of the bounding box so the object can't go through the box.
-- [ ] Test if we can send the whole canvas to Claude
-- [ ] See if we can click on a face and move the object to that face
+- [ ] Test if we can send the whole canvas to Claude (why did we want this?)
+
 
 
 ### Notes:
