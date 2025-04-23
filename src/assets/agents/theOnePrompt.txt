@@ -67,8 +67,8 @@ Button Parameters:
 Case Parameters:
 * case_width: Auto-size based on layout or user specification
 * case_depth: Auto-size based on layout or user specification
-* wall_thickness: 1.5-3mm (standard: 2.5mm)
-* corner_radius: 1-5mm (standard: 2mm)
+* wall_thickness: 1.5-5mm (standard: 2.5mm)
+* corner_radius: 1-3mm (standard: 2mm, always less than wall_thickness)
 * top_thickness: 1.5-4mm (standard: 2mm)
 * edge_margin: 5-15mm (standard: 8mm)
 * lip_height: 1.5-3mm (standard: 2mm)
