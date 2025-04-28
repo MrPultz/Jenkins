@@ -33,11 +33,17 @@ canvas {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-.submit-button {
+.submit-buttons-container {
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 100;
+}
+
+.submit-button {
   background-color: #4CAF50;
   color: white;
   border: none;
@@ -45,7 +51,6 @@ canvas {
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-  z-index: 100;
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 

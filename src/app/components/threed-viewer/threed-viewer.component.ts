@@ -98,6 +98,10 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.switchModelEvent.emit();
   }
 
+  submitModel(): void {
+    console.log("you submitted the model and will send it request to server.");
+  }
+
 
   ngAfterViewInit() {
     // Add debug log for canvas dimensions

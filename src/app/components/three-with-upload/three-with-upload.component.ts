@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, OnInit, Input, EventEmitter, Output } from '@angular/core';
+import {Component, ElementRef, ViewChild, OnInit, Input, EventEmitter, Output, SimpleChanges, OnChanges} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -18,8 +18,7 @@ type TransformControlsMode = 'translate' | 'rotate' | 'scale';
   templateUrl: './three-with-upload.component.html',
   styleUrl: './three-with-upload.component.css'
 })
-export class ThreeWithUploadComponent implements OnInit {
-
+export class ThreeWithUploadComponent implements OnInit, OnChanges {
   @ViewChild('rendererContainer', { static: true }) rendererContainer!: ElementRef;
 
   // Add this to the component class properties
@@ -27,6 +26,7 @@ export class ThreeWithUploadComponent implements OnInit {
 
   // Input to receive model from previous page
   @Input() baseModelGeometry?: THREE.BufferGeometry;
+  @Input() stlData: ArrayBuffer | null = null;
 
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -51,6 +51,13 @@ export class ThreeWithUploadComponent implements OnInit {
 
   ngOnInit() {
     this.initScene();
+
+    // If we already have STL data, try to load it
+    if (this.stlData) {
+      setTimeout(() => {
+        this.loadStlFromData(this.stlData as ArrayBuffer);
+      }, 100);
+    }
   }
 
   ngAfterViewInit() {
@@ -61,6 +68,70 @@ export class ThreeWithUploadComponent implements OnInit {
         this.loadUnicornHorn();
       }, 300);
     }, 100);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['stlData'] && changes['stlData'].currentValue) {
+      this.loadStlFromData(changes['stlData'].currentValue);
+    }
+  }
+
+  loadStlFromData(buffer: ArrayBuffer): void {
+    // Check if scene is initialized
+    if (!this.scene) {
+      console.log('Scene not initialized yet, storing data for later');
+      // Store the buffer for loading after scene is initialized
+      setTimeout(() => {
+        if (this.scene) {
+          this.loadStlFromData(buffer);
+        } else {
+          console.error('Scene still not initialized after delay');
+        }
+      }, 300);
+      return;
+    }
+
+    // Implementation to load the STL data into your Three.js scene
+    // This depends on how your component currently loads STL files
+    console.log('Loading STL from provided data buffer...');
+
+    // Example implementation (adjust according to your existing code):
+    const loader = new STLLoader();
+    const geometry = loader.parse(buffer);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xaaaaaa,
+      metalness: 0.25,
+      roughness: 0.1,
+      transparent: true,
+      opacity: 0.95
+    });
+
+    // Create mesh and add to scene
+    const mesh = new THREE.Mesh(geometry, material);
+
+    // Center the mesh
+    const box = new THREE.Box3().setFromObject(mesh);
+    const center = box.getCenter(new THREE.Vector3());
+    mesh.position.sub(center);
+
+    // Clear existing objects if needed
+    this.clearExistingModel();
+
+    // Add to scene
+    this.scene.add(mesh);
+
+    // Update renderer
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  clearExistingModel(): void {
+    // Remove any existing models from the scene
+    // Implementation depends on how you're tracking models in your scene
+    this.scene.children.forEach(child => {
+      if (child instanceof THREE.Mesh) {
+        this.scene.remove(child);
+      }
+    });
   }
 
   private initScene(): void {

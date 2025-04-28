@@ -150,6 +150,32 @@
 .message-text {
   flex: 1;
   line-height: 1.4;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Make sure code blocks don't overflow */
+.message-text pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  max-width: 100%;
+}
+
+/* Ensure images don't overflow */
+.message-text img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Handle tables properly */
+.message-text table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+  border-collapse: collapse;
 }
 
 /* Option buttons styling */
@@ -370,6 +396,42 @@
       }
     }
   }
+}
+
+/* Add these styles to your chat.component.css file */
+::ng-deep .message-text markdown {
+  display: block;
+  width: 100%;
+  overflow-wrap: break-word;
+}
+
+::ng-deep .message-text markdown p {
+  width: 100%;
+  overflow-wrap: break-word;
+  margin: 0.5rem 0;
+}
+
+::ng-deep .message-text markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+::ng-deep .message-text markdown code {
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+::ng-deep .message-text markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+::ng-deep .message-text markdown table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
 }
 
 .loading-container {

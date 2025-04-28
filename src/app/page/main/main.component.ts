@@ -52,6 +52,8 @@ export class MainComponent implements OnInit, OnDestroy{
   private speechSynthesis: SpeechSynthesis | null = null;
   private speechRecognition: any = null;
 
+  generatedStlData: ArrayBuffer | null = null;
+
   constructor(private iterationAgent: IterationAgentService, private anthropicIterationAgent: AnthropicIterationAgentService, private scadConvertService: ScadConvertService) {
     // Initialize speech synthesis if available
     if ('speechSynthesis' in window) {
@@ -357,6 +359,11 @@ export class MainComponent implements OnInit, OnDestroy{
         next: (response: Blob) => {
           // Process successful response
           console.log('3D model generated successfully');
+
+          response.arrayBuffer().then(buffer => {
+            this.generatedStlData = buffer;
+            console.log('Generated STL data:', this.generatedStlData);
+          })
 
           // Create object URL for the 3D model
           this.modelUrl = window.URL.createObjectURL(response);

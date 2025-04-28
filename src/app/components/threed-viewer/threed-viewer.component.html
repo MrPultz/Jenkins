@@ -1,5 +1,9 @@
 <div class="threed-container">
   <canvas #mainCanvas class="main-canvas"></canvas>
   <div #miniViewport class="mini-viewport"></div>
-  <button class="submit-button" (click)="switchToModelEditor()">Edit in Model Editor</button>
+  <div class="submit-buttons-container">
+    <button class="submit-button" (click)="switchToModelEditor()">Edit in Model Editor</button>
+    <button class="submit-button" (click)="submitModel()">Submit</button>
+  </div>
+
 </div>
