@@ -9,6 +9,9 @@ import {IterationAgentService} from "../../services/iteration-agent.service";
 import {ScadConvertService} from "../../services/scad-convert.service";
 import {AnthropicIterationAgentService} from "../../services/anthropic-iteration-agent.service";
 import {ThreeWithUploadComponent} from "../../components/three-with-upload/three-with-upload.component";
+import {BaseMovementAgentService, MovementResponse} from "../../services/base-movement-agent.service";
+import {DeepseekMovementAgentService} from "../../services/deepseek-movement-agent.service";
+import {AnthropicMovementAgentService} from "../../services/anthropic-movement-agent.service";
 
 interface ChatMessage {
   id: number;
@@ -54,7 +57,21 @@ export class MainComponent implements OnInit, OnDestroy{
 
   generatedStlData: ArrayBuffer | null = null;
 
-  constructor(private iterationAgent: IterationAgentService, private anthropicIterationAgent: AnthropicIterationAgentService, private scadConvertService: ScadConvertService) {
+  currentMovementAgent!: BaseMovementAgentService;
+  movementAction: MovementResponse | null = null;
+
+  constructor(
+    private iterationAgent: IterationAgentService,
+    private anthropicIterationAgent: AnthropicIterationAgentService,
+    private scadConvertService: ScadConvertService,
+    private deepseekMovementAgent: DeepseekMovementAgentService,
+    private anthropicMovementAgent: AnthropicMovementAgentService
+  ) {
+    // Initialize the current movement agent based on the default model
+    this.currentMovementAgent = this.useAnthropicModel ?
+      this.anthropicMovementAgent :
+      this.deepseekMovementAgent;
+
     // Initialize speech synthesis if available
     if ('speechSynthesis' in window) {
       this.speechSynthesis = window.speechSynthesis;
@@ -102,17 +119,22 @@ export class MainComponent implements OnInit, OnDestroy{
     return this.useAnthropicModel ? this.anthropicIterationAgent : this.iterationAgent;
   }
 
+// Method to get the active movement agent
+  getActiveMovementAgent(): BaseMovementAgentService {
+    return this.useAnthropicModel ? this.anthropicMovementAgent : this.deepseekMovementAgent;
+  }
   toggleModel(useClaudeModel?: boolean) {
     if (useClaudeModel !== undefined) {
       this.useAnthropicModel = useClaudeModel;
     } else {
       this.useAnthropicModel = !this.useAnthropicModel;
     }
+
+    // Update the movement agent when switching models
+    this.currentMovementAgent = this.getActiveMovementAgent();
   }
 
   onSendMessage(message: string): void {
-    const agent = this.getActiveAgent();
-
     // Add user message to the conversation
     const userMessage = {
       id: Date.now(),
@@ -124,6 +146,54 @@ export class MainComponent implements OnInit, OnDestroy{
 
     this.messages = [...this.messages, userMessage];
     this.isLoading = true;
+
+    // If in model editor mode, use movement agent
+    if (this.modelEditor) {
+      // Get the current movement agent
+      const movementAgent = this.getActiveMovementAgent();
+
+      // Process the movement instruction
+      movementAgent.processMovementInstruction(message).subscribe({
+        next: (response) => {
+          // Apply the movement to the 3D model
+          this.movementAction = response;
+
+          // Add response to chat
+          const responseMessage = {
+            id: Date.now() + 1,
+            text: response.description,
+            isUser: false,
+            isSystem: true,
+            needMoreInformation: false,
+            timestamp: new Date()
+          };
+
+          this.messages = [...this.messages, responseMessage];
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error processing movement instruction:', error);
+
+          // Add error message to chat
+          const errorMessage = {
+            id: Date.now() + 1,
+            text: 'Sorry, I could not process that movement instruction.',
+            isUser: false,
+            isSystem: true,
+            needMoreInformation: false,
+            timestamp: new Date()
+          };
+
+          this.messages = [...this.messages, errorMessage];
+          this.isLoading = false;
+        }
+      });
+
+      return;
+    }
+
+    // Regular chat mode - use the iteration agent
+    const agent = this.getActiveAgent();
 
     // Send message to the agent
     agent.sendMessage(message)

@@ -17,17 +17,22 @@
 - [X] Make other Object (horn just be there)
 - [X] Create a pivot for the uploaded object
 - [X] See if we can click on a face and move the object to that face
-- [ ] Fix size issues for scene. Plus make sure it removes the old object.
-- [ ] Make bounding box for the first object (Generated Object) -> Can't do this until we have made prompt engineering
-- [ ] Write the prompt engineering
+- [X] Fix size issues for scene. Plus make sure it removes the old object.
+- [X] Make bounding box for the first object (Generated Object) -> Can't do this until we have made prompt engineering
+- [ ] Get XYZ for the buttons to make the bounding box between.
+- [ ] Fix bounding box so it shows where you can't add it maybe?
+- [ ] Make sure the unicorn horn is always on a surface it can be seen on.
+- [ ] Add submit button to the viewer so that you can send it to the backend and get gcode and such.
+- [X] Write the prompt engineering 
+- [X] Write a better Prompt engineering maybe?
 - [X] Make sure the pivot is always touching the surface of the other object
-- [ ] Be able to write to the chat what to do with that object (convert the result to xyz that can be changed in the code and use with live update viewer)
+- [X] Be able to write to the chat what to do with that object (convert the result to xyz that can be changed in the code and use with live update viewer)
 - [X] Testing of the bounding box so the object can't go through the box.
 - [X] Test if we can send the whole canvas to Claude (why did we want this?)
-- [ ] Fix bounding box does not show right size atm.
-- [ ] Fix so you can't click when are using the controls.
+- [X] Fix so you can't click when are using the controls.
 - [X] Add so that, when you switch to the interaction mode, link to right page
-- 
+- [X] Make chat always be scrolled to the bottom
+- [X] Remove so it does not change between move rotate and scale when pressing keys in chat.
 
 
 

@@ -9,7 +9,7 @@
       </div>
 
       <!-- Chat messages shown after first message -->
-      <div class="chat-messages" *ngIf="messages.length > 0">
+      <div #chatContainer class="chat-messages" *ngIf="messages.length > 0">
         <div class="message-container" *ngFor="let message of messages">
           <div class="message-content" [ngClass]="{'system-message': message.isSystem, 'user-message': message.isUser}">
             <!-- For system messages -->
