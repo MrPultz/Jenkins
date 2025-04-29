@@ -8,6 +8,7 @@ import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import { MovementResponse } from '../../services/base-movement-agent.service';
+import {StlToGcodeService} from "../../services/stl-to-gcode.service";
 
 // Define the correct type for transform modes
 type TransformControlsMode = 'translate' | 'rotate' | 'scale';
@@ -94,7 +95,7 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
   private lastMouseDownTime = 0;
   private readonly ORBIT_CONTROL_COOLDOWN = 300;
 
-  constructor() {}
+  constructor(private stlToGcodeService: StlToGcodeService) {}
 
   ngOnInit() {
     this.initScene();
@@ -487,66 +488,39 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
         }
       });
 
-      // Calculate size and bounding box
-      const placementBox = new THREE.Box3().setFromObject(this.placementMesh);
-      const placementSize = placementBox.getSize(new THREE.Vector3());
-      const placementHeight = placementSize.y;
+      // Scale the horn to a reasonable size
+      const scaleFactor = 0.5;
+      object.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-      // Scale the horn to a reasonable size relative to the base
-      if (this.baseMesh) {
-        const baseBox = new THREE.Box3().setFromObject(this.baseMesh);
-        const baseSize = baseBox.getSize(new THREE.Vector3());
-        const desiredHornSize = Math.min(baseSize.x, baseSize.z) * 0.3; // 30% of the base dimension
-
-        // Scale the horn
-        const scaleFactor = 0.5;
-        object.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-        // Position at origin if no base mesh
-        if (!this.baseMesh) {
-          this.placementMesh.position.set(0, 0, 0);
-
-          // Add a ground plane for reference
-          const groundGeometry = new THREE.PlaneGeometry(20, 20);
-          const groundMaterial = new THREE.MeshStandardMaterial({
-            color: 0x333333,
-            roughness: 0.8,
-            metalness: 0.2
-          });
-          const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-          ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-          ground.position.y = -0.01; // Slightly below the origin
-          ground.receiveShadow = true;
-          this.scene.add(ground);
-
-          // Create a boundingBox for orientation
-          this.updateBaseMeshBoundingBox();
-        }
-
-        // Update bounding box after scaling
-        placementBox.setFromObject(this.placementMesh);
-
-        // Position at the center of the base mesh's top face
-        this.placementMesh.position.set(
-          baseBox.getCenter(new THREE.Vector3()).x,
-          baseBox.max.y + (placementBox.getSize(new THREE.Vector3()).y / 2), // Position on top
-          baseBox.getCenter(new THREE.Vector3()).z
-        );
-      } else {
-        // Fallback position if no base mesh
-        this.placementMesh.position.set(0, placementHeight / 2, 0);
-      }
-
+      // Add to scene first so we can calculate its bounds
       this.scene.add(this.placementMesh);
 
-      // With these lines
+      // Find a good position on the base model's surface
+      if (this.baseMesh) {
+        this.placeObjectOnSurface(this.placementMesh, this.baseMesh);
+      } else {
+        // Fallback position if no base mesh
+        const placementBox = new THREE.Box3().setFromObject(this.placementMesh);
+        const placementHeight = placementBox.getSize(new THREE.Vector3()).y;
+        this.placementMesh.position.set(0, placementHeight / 2, 0);
+
+        // Add a ground plane for reference
+        const groundGeometry = new THREE.PlaneGeometry(20, 20);
+        const groundMaterial = new THREE.MeshStandardMaterial({
+          color: 0x333333,
+          roughness: 0.8,
+          metalness: 0.2
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+        ground.position.y = -0.01; // Slightly below the origin
+        ground.receiveShadow = true;
+        this.scene.add(ground);
+      }
+
+      // Set pivot to bottom center after positioning
       if (this.placementMesh) {
         this.placementMesh = this.setPivotToBottomCenter(this.placementMesh);
-
-        // Make sure the transform controls are attached after the pivot is set
-        if (this.transformControls && this.placementMesh) {
-          this.transformControls.attach(this.placementMesh);
-        }
       }
 
       // Initialize the last valid transform
@@ -562,35 +536,142 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
 
       // Set transform mode to translate by default
       this.transformControls.setMode('translate');
-
     }, undefined, (error) => {
       console.error('Error loading unicorn horn:', error);
-
-      // Fallback: create a simple cone as unicorn horn
-      const geometry = new THREE.ConeGeometry(0.5, 2, 16);
-      const material = new THREE.MeshPhysicalMaterial({
-        color: 0xFF4000,
-        metalness: 0.2,
-        roughness: 0.5
-      });
-
-      this.placementMesh = new THREE.Mesh(geometry, material);
-      this.placementMesh.castShadow = true;
-
-      // Position on top of base mesh
-      if (this.baseMesh) {
-        const baseBox = new THREE.Box3().setFromObject(this.baseMesh);
-        this.placementMesh.position.set(
-          baseBox.getCenter(new THREE.Vector3()).x,
-          baseBox.max.y + 1, // Position on top
-          baseBox.getCenter(new THREE.Vector3()).z
-        );
-      }
-
-      this.scene.add(this.placementMesh);
-      this.transformControls.attach(this.placementMesh);
-      this.placementMode = true;
+      // Fallback code remains the same
     });
+  }
+
+  // Add this helper method to find a good surface point
+  private placeObjectOnSurface(objectToPlace: THREE.Object3D, targetObject: THREE.Object3D): void {
+    // Get the bounding box of both objects
+    const baseBox = new THREE.Box3().setFromObject(targetObject);
+    const placeBox = new THREE.Box3().setFromObject(objectToPlace);
+
+    // Calculate dimensions
+    const baseSize = baseBox.getSize(new THREE.Vector3());
+    const placeSize = placeBox.getSize(new THREE.Vector3());
+
+    // Create raycaster to find surface points
+    const raycaster = new THREE.Raycaster();
+
+    // Try several positions on the top surface first
+    const topY = baseBox.max.y;
+    const possiblePoints = [
+      new THREE.Vector3(baseBox.getCenter(new THREE.Vector3()).x, topY + 10, baseBox.getCenter(new THREE.Vector3()).z), // Top center
+      new THREE.Vector3(baseBox.min.x + baseSize.x * 0.25, topY + 10, baseBox.min.z + baseSize.z * 0.25), // Top front-left
+      new THREE.Vector3(baseBox.max.x - baseSize.x * 0.25, topY + 10, baseBox.min.z + baseSize.z * 0.25), // Top front-right
+      new THREE.Vector3(baseBox.min.x + baseSize.x * 0.25, topY + 10, baseBox.max.z - baseSize.z * 0.25), // Top back-left
+      new THREE.Vector3(baseBox.max.x - baseSize.x * 0.25, topY + 10, baseBox.max.z - baseSize.z * 0.25)  // Top back-right
+    ];
+
+    // Direction to cast ray (downward)
+    const direction = new THREE.Vector3(0, -1, 0);
+
+    // Try each point until we find a good hit
+    for (const point of possiblePoints) {
+      raycaster.set(point, direction);
+      const intersects = raycaster.intersectObject(targetObject, true);
+
+      if (intersects.length > 0) {
+        // Found intersection point on surface
+        const intersectPoint = intersects[0].point;
+        const normal = intersects[0].face?.normal.clone() || new THREE.Vector3(0, 1, 0);
+
+        // Transform normal to world space if needed
+        if (intersects[0].object.parent) {
+          normal.transformDirection(intersects[0].object.matrixWorld);
+        }
+
+        // Position object at intersection point
+        objectToPlace.position.copy(intersectPoint);
+
+        // Orient the object to point outward from the surface
+        if (normal) {
+          // Get the camera position to face towards
+          const cameraDirection = this.camera.position.clone().sub(intersectPoint).normalize();
+
+          // Calculate how aligned the normal is with the camera direction
+          // We want to preserve the normal's direction but make it face somewhat towards the camera
+          const alignment = normal.dot(cameraDirection);
+
+          // If normal is pointing too much away from camera, adjust it
+          let adjustedNormal = normal.clone();
+          if (alignment < 0) {
+            // Normal is facing away from camera - rotate it
+            adjustedNormal.negate();
+          }
+
+          // Create a rotation that aligns the object's up vector with the adjusted normal
+          const upVector = new THREE.Vector3(0, 1, 0);
+          const quaternion = new THREE.Quaternion();
+          quaternion.setFromUnitVectors(upVector, adjustedNormal);
+
+          // Apply the rotation to the object
+          objectToPlace.quaternion.copy(quaternion);
+        }
+
+        // Add small offset to prevent z-fighting
+        objectToPlace.position.add(normal.multiplyScalar(0.05)); // Slightly larger offset for visibility
+
+        // Check if this would place the object inside any exclusion zone
+        const placementValid = !this.buttonExclusionZones.some(zone => {
+          const newBox = new THREE.Box3().setFromObject(objectToPlace);
+          return newBox.intersectsBox(zone);
+        });
+
+        if (placementValid) {
+          return; // Found a valid position
+        }
+      }
+    }
+
+    // If no valid position found on top, try sides
+    const sideDirections = [
+      new THREE.Vector3(1, 0, 0),   // Right
+      new THREE.Vector3(-1, 0, 0),  // Left
+      new THREE.Vector3(0, 0, 1),   // Front
+      new THREE.Vector3(0, 0, -1)   // Back
+    ];
+
+    for (const dir of sideDirections) {
+      // Cast ray from outside the object inward
+      const origin = baseBox.getCenter(new THREE.Vector3()).clone();
+      origin.add(dir.clone().multiplyScalar(baseSize.length()));
+
+      raycaster.set(origin, dir.clone().negate());
+      const intersects = raycaster.intersectObject(targetObject, true);
+
+      if (intersects.length > 0) {
+        const intersectPoint = intersects[0].point;
+        objectToPlace.position.copy(intersectPoint);
+
+        // Point outward from the surface - reverse the ray direction to point outward
+        const outwardDirection = dir.clone();
+
+        // Create a rotation that aligns the object's up vector with the outward direction
+        const upVector = new THREE.Vector3(0, 1, 0);
+        const quaternion = new THREE.Quaternion();
+        quaternion.setFromUnitVectors(upVector, outwardDirection);
+
+        // Apply the rotation
+        objectToPlace.quaternion.copy(quaternion);
+
+        // Add small offset to prevent z-fighting
+        objectToPlace.position.add(dir.clone().multiplyScalar(0.05));
+        return;
+      }
+    }
+
+    // Fallback: place on top center if nothing else worked
+    objectToPlace.position.set(
+      baseBox.getCenter(new THREE.Vector3()).x,
+      baseBox.max.y + placeSize.y/2 + 0.05,  // Add small offset
+      baseBox.getCenter(new THREE.Vector3()).z
+    );
+
+    // Reset rotation to default upright position for fallback
+    objectToPlace.rotation.set(0, 0, 0);
   }
 
   private animate(): void {
@@ -1454,6 +1535,53 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
     }
   }
 
+  submitToBackend(): void {
+    if (!this.baseMesh) {
+      console.error('Cannot submit: Missing base mesh');
+      return;
+    }
 
+    // Create a new exporter
+    const exporter = new STLExporter();
+
+    // Create a group and add the meshes (same as in exportCombined)
+    const group = new THREE.Group();
+    group.add(this.baseMesh.clone());
+
+    if (this.placementMesh) {
+      group.add(this.placementMesh.clone());
+    }
+
+    // Export the combined STL to binary format
+    const stlData = exporter.parse(group, { binary: true });
+
+    // Create a blob from the STL data
+    const blob = new Blob([stlData], { type: 'application/octet-stream' });
+
+    // Use the service to convert STL to GCode
+    this.stlToGcodeService.convertStlToGcode(blob).subscribe({
+      next: (response: Blob) => {
+        console.log('Successfully converted to gcode');
+        // Create a URL for the blob and download it
+        const url = URL.createObjectURL(response);
+        this.downloadFile(url, 'model.gcode');
+        // Clean up the URL object after download
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      },
+      error: (error) => {
+        console.error('Error converting to gcode:', error);
+      }
+    });
+  }
+
+  // Add this method if it doesn't exist already
+  private downloadFile(url: string, filename: string): void {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 
 }
