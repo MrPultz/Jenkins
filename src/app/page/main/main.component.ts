@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {NgIf} from "@angular/common";
 import {ReactiveFormsModule} from "@angular/forms";
 import {ThreedViewerComponent} from "../../components/threed-viewer/threed-viewer.component";
@@ -40,6 +40,10 @@ interface ChatMessage {
   styleUrl: './main.component.css'
 })
 export class MainComponent implements OnInit, OnDestroy{
+  @ViewChild('threeComponent') threeComponent!: ThreeWithUploadComponent;
+
+  buttonLayout: number[][] | null = null;
+
   useAnthropicModel = false;
 
   messages: any[] = [];
@@ -98,6 +102,28 @@ export class MainComponent implements OnInit, OnDestroy{
 
   ngOnInit(): void {
 
+  }
+
+  // Update the ngAfterViewInit method
+  ngAfterViewInit() {
+    // Get button layout from the service if available
+    this.buttonLayout = this.anthropicIterationAgent.getButtonLayout();
+
+    // If button layout exists, pass it to the three component
+    if (this.buttonLayout && this.threeComponent) {
+      this.threeComponent.setButtonLayoutFromInput(this.buttonLayout);
+    }
+  }
+
+  // Add this method to pass button layout to the component
+  updateThreeComponentLayout() {
+    // Update button layout from the most recent data
+    this.buttonLayout = this.anthropicIterationAgent.getButtonLayout();
+
+    // Pass to the component if available
+    if (this.buttonLayout && this.threeComponent) {
+      this.threeComponent.setButtonLayoutFromInput(this.buttonLayout);
+    }
   }
 
   ngOnDestroy(): void {
@@ -398,6 +424,8 @@ export class MainComponent implements OnInit, OnDestroy{
     // Set up the 3D viewer
     this.threeDAgent = true;
     this.isDrawing = false;
+
+    this.buttonLayout = buttonLayout;
 
     // Format the button layout as expected by the service
     const formattedComponents = buttonLayout.map((button: number[], index: number) => ({

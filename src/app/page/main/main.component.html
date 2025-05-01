@@ -37,7 +37,7 @@
       </app-threed-viewer>
 
       <app-three-with-upload
-      *ngIf="modelEditor" [stlData]="generatedStlData" [movementAction]="movementAction" style="display:block; height:100%; width:100%">
+      *ngIf="modelEditor" #threeWithUploadComponent [stlData]="generatedStlData" [buttonLayout]="buttonLayout" [movementAction]="movementAction" style="display:block; height:100%; width:100%">
 
     </app-three-with-upload>
     </div>

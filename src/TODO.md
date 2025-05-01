@@ -35,7 +35,7 @@
 - [X] Remove so it does not change between move rotate and scale when pressing keys in chat.
 
 ### Submit button
-- [ ] Should get expanded view of model when converting to stl or gcode.
+- [ ] Should get expanded view of model when converting to stl or gcode. OR should it? maybe just generate it when printing?
 
 
 
