@@ -40,8 +40,12 @@
 
 
 ### Maintainance
-- [ ] Host it on a server
-- [ ] Setup so we can try and print it over network
+- [X] Host it on a server
+- [ ] Setup so we can try and print it over network -
+- [ ] Redraw button
+- [ ] Button to change how much text it shows.
+- [ ] Cusztimizse model
+- [ ] A button en custimze mode to get back to redesign.
 
 
 ### Notes:
