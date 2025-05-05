@@ -46,6 +46,7 @@
 - [ ] Button to change how much text it shows.
 - [ ] Cusztimizse model
 - [ ] A button en custimze mode to get back to redesign.
+- [ ] Add expaneded view of the model when printing.
 
 
 ### Notes:
