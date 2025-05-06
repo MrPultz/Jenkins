@@ -70,25 +70,41 @@ Respond with a valid JSON object containing the specific values needed:
 
   protected parseResponse(responseText: string): MovementResponse {
     try {
-      // Try to extract JSON from the response
-      const jsonMatch = responseText.match(/\{[\s\S]*?\}(?!\s*[,\}])/);
+      console.log('Raw response to parse:', responseText);
+
+      // More robust JSON extraction pattern
+      // This looks for the most complete JSON object in the response
+      const jsonMatch = responseText.match(/\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}/);
+
       if (jsonMatch) {
+        const jsonStr = jsonMatch[0];
+        console.log('Extracted JSON string:', jsonStr);
+
         try {
-          const parsed = JSON.parse(jsonMatch[0]);
+          const parsed = JSON.parse(jsonStr);
+          console.log('Parsed response:', parsed);
+
           // Validate the parsed response has the required fields
-          if (parsed.action &&
+          if (
+            parsed.action &&
+            ['position', 'rotation', 'scale'].includes(parsed.action) &&
             Array.isArray(parsed.values) &&
             parsed.values.length === 3 &&
-            parsed.description) {
+            parsed.values.every((v: unknown) => typeof v === 'number')
+          ) {
             return {
               action: parsed.action as 'position' | 'rotation' | 'scale',
               values: parsed.values as [number, number, number],
-              description: parsed.description
+              description: parsed.description || 'Movement applied'
             };
+          } else {
+            console.error('Invalid response structure:', parsed);
           }
         } catch (jsonError) {
-          console.error('JSON parsing error:', jsonError);
+          console.error('JSON parsing error:', jsonError, 'for string:', jsonStr);
         }
+      } else {
+        console.error('No JSON object found in response');
       }
 
       // If we can't parse or validate the response, return a default

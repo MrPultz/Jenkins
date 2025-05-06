@@ -21,7 +21,7 @@
 - [X] Make bounding box for the first object (Generated Object) -> Can't do this until we have made prompt engineering
 - [X] Get XYZ for the buttons to make the bounding box between.
 - [X] Fix bounding box so it shows where you can't add it maybe?
-- [ ] Make Submit make expanded view so it ready to print (make new backend point)
+- [X] Make Submit make expanded view so it ready to print (make new backend point)
 - [X] Make sure the unicorn horn is always on a surface it can be seen on.
 - [X] Add submit button to the viewer so that you can send it to the backend and get gcode and such.
 - [X] Write the prompt engineering 
@@ -34,6 +34,7 @@
 - [X] Add so that, when you switch to the interaction mode, link to right page
 - [X] Make chat always be scrolled to the bottom
 - [X] Remove so it does not change between move rotate and scale when pressing keys in chat.
+- [ ] We should probably write a better prompt to give it a much better context. And make it work better. Maybe add so that it does it based on the camera position?
 
 ### Submit button
 - [X] Should get expanded view of model when converting to stl or gcode. OR should it? maybe just generate it when printing?
@@ -41,12 +42,17 @@
 
 ### Maintainance
 - [X] Host it on a server
-- [ ] Setup so we can try and print it over network -
-- [ ] Redraw button
-- [ ] Button to change how much text it shows.
-- [ ] Cusztimizse model
-- [ ] A button en custimze mode to get back to redesign.
-- [ ] Add expaneded view of the model when printing.
+- [X] Redraw button
+- [X] Button to change how much text it shows.
+- [X] Cusztimizse model button name.
+- [X] A button on custimze mode to get back to redesign.
+- [ ] Make Submit make expanded view so it ready to print (make new backend point)
+
+
+### For Between the rapport and exam -> All this new branch.
+- [ ] Make a consultant prompt for the chat. That then knows based on the message which prompt to use.
+- [ ] Implement so that it can then know if it should contact Meshy.ai to generate a model to get to add where ever you want.
+- [ ] Setup so we can try and print it over network - skip for now
 
 
 ### Notes:

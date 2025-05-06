@@ -8,7 +8,8 @@ import {Observable} from "rxjs";
   providedIn: 'root'
 })
 export class ScadConvertService {
-  private apiURL = 'http://localhost:3000'
+  private apiURL = 'http://localhost:3000/api/' // <- Used when local
+  //private apiURL = '/api/' // <- Used when deployed
 
   constructor(private http: HttpClient) { }
 
@@ -41,7 +42,7 @@ export class ScadConvertService {
 
     console.log('SCAD Command:', scadCommand);
     // Send to backend
-    return this.http.post(`${this.apiURL}/api/convert-to-scad`,
+    return this.http.post(`${this.apiURL}convert-to-scad`,
       { scadCommand, buttonLayout, buttonParams: paramsArray },
       { responseType: 'blob' }
     );

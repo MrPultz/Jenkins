@@ -41,6 +41,7 @@ interface ChatMessage {
 })
 export class MainComponent implements OnInit, OnDestroy{
   @ViewChild('threeComponent') threeComponent!: ThreeWithUploadComponent;
+  @ViewChild(ChatComponent) chatComponent!: ChatComponent;
 
   buttonLayout: number[][] | null = null;
 
@@ -141,6 +142,12 @@ export class MainComponent implements OnInit, OnDestroy{
     }
   }
 
+  switchTo3DViewer() {
+    this.threeDAgent = true;
+    this.isDrawing = false;
+    this.modelEditor = false;
+  }
+
   private getActiveAgent() {
     return this.useAnthropicModel ? this.anthropicIterationAgent : this.iterationAgent;
   }
@@ -238,10 +245,15 @@ export class MainComponent implements OnInit, OnDestroy{
           agent.setButtonParams(processedResponse.buttonParams);
         }
 
+        // Get a reference to the ChatComponent to check useLongText flag
+        // You need to set up ViewChild for the ChatComponent if not already done
+        const useLongText = this.chatComponent?.useLongText ?? true;
+
         // Add the response to messages
         const responseMessage = {
           id: Date.now() + 1,
-          text: processedResponse.cleanedResponse,
+          text: useLongText ? processedResponse.cleanedResponse : "I have started generating your 3D model. Please wait. If you want to have full information about the model, please toggle 'Use long text' in the chat.",
+          originalText: processedResponse.cleanedResponse, // Store original text
           isUser: false,
           isSystem: true,
           needMoreInformation: false,
@@ -511,19 +523,51 @@ export class MainComponent implements OnInit, OnDestroy{
     this.isDrawing = false;
     this.modelEditor = true;
 
+  }
 
-    // Optionally, add a message to the chat history
-    const systemMessage = {
-      id: Date.now(),
-      text: 'Switched to 3D model editing mode. You can now make changes to your model.',
-      isUser: false,
-      isSystem: true,
-      needMoreInformation: false,
-      timestamp: new Date()
-    };
+  async sendMessageToMovementAgent(message: string): Promise<void> {
+    if (!this.threeComponent) {
+      console.error('No three component available');
+      return;
+    }
 
-    this.messages = [...this.messages, systemMessage];
+    // Use a public method to check if the base mesh exists
+    if (!this.threeComponent.hasBaseMesh()) {
+      console.error('No base mesh available for the agent to reference');
+      return;
+    }
 
+    // Get the model context using a public method
+    const modelContext = this.threeComponent.getModelContext();
+
+    // Combine the user message with the context information
+    const fullPrompt = `
+USER REQUEST: ${message}
+
+MODEL CONTEXT: ${JSON.stringify(modelContext, null, 2)}
+  `;
+
+    try {
+      // Convert the Observable to a Promise for async/await usage
+      const agentResponse = await this.currentMovementAgent.processMovementInstruction(fullPrompt).toPromise();
+
+      if (!agentResponse) {
+        console.error('Empty response from move agent');
+        return;
+      }
+
+      // Apply the movement response directly (it's already the correct type)
+      this.threeComponent.applyMovementAction(agentResponse);
+
+    } catch (error) {
+      console.error('Error processing agent response:', error);
+    }
+  }
+
+  onSwitchToDrawing() {
+    this.threeDAgent = false;
+    this.isDrawing = true;
+    this.modelEditor = false;
   }
 
   extractModelGeometry(): any {

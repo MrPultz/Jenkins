@@ -1,9 +1,20 @@
-import {Component, ElementRef, EventEmitter, Input, OnChanges, Output, ViewChild, SimpleChanges} from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  ViewChild,
+  SimpleChanges,
+  OnInit
+} from '@angular/core';
 import {MarkdownComponent} from "ngx-markdown";
 import {NgClass, NgForOf, NgIf} from "@angular/common";
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {SvgviewerComponent} from "../svgviewer/svgviewer.component";
 import {ThreedViewerComponent} from "../threed-viewer/threed-viewer.component";
+import {ThreeWithUploadComponent} from "../three-with-upload/three-with-upload.component";
 
 @Component({
   selector: 'app-chat',
@@ -13,15 +24,13 @@ import {ThreedViewerComponent} from "../threed-viewer/threed-viewer.component";
     NgForOf,
     NgIf,
     ReactiveFormsModule,
-    SvgviewerComponent,
-    ThreedViewerComponent,
     NgClass,
     FormsModule
   ],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.css'
 })
-export class ChatComponent implements OnChanges {
+export class ChatComponent implements OnChanges, OnInit {
   @Input() messages: any[] = [];
   @Input() isLoading = false;
   @Input() isSpeaking = false;
@@ -38,8 +47,29 @@ export class ChatComponent implements OnChanges {
 
   private shouldAutoScroll = true;
   private userScrolled = false;
+  useLongText = false;
 
   inputMessage = '';
+
+  ngOnInit() {
+    // Add welcome message as the first system message
+    //NOTE: It needs to be indented like this or else it will render badly.
+    this.messages.push({
+      text: `## Welcome to Jenkins!
+
+I can help you design and create 3D models. Right now I'm limited to Keyboard and Remote controls. And the customization is not able to generate any object you want as of yet.
+
+Here are some suggestions for what to generate, but feel free to explore:
+- A keyboard with 8 buttons
+- A Samsung Remote control for your TV
+- The numpad of a keyboard
+- The arrow keys on a keyboard
+
+What would you like to create today?`,
+      isSystem: true,
+      isUser: false
+    });
+  }
 
   ngAfterViewInit() {
     // Add scroll event listener to detect manual scrolling
@@ -93,6 +123,29 @@ export class ChatComponent implements OnChanges {
   onModelChange(event: any) {
     // Emit the new model selection (true for Claude, false for DeepSeek)
     this.modelChangeEvent.emit(event.target.value === 'claude');
+  }
+
+  onTextAmountChange(event: any) {
+    this.useLongText = event.target.checked;
+
+    // If toggling to short text mode, update any existing system messages
+    if (!this.useLongText) {
+      this.messages.forEach(message => {
+        if (message.isSystem && message.originalText) {
+          // Store the current long text as original if not already stored
+          message.originalText = message.originalText || message.text;
+          // Replace with shorter summary
+          message.text = "I have started generating your 3D model. Please wait. If you want to have full information about the model, please toggle 'Use long text' in the chat.";
+        }
+      });
+    } else {
+      // If toggling to long text mode, restore original messages
+      this.messages.forEach(message => {
+        if (message.isSystem && message.originalText) {
+          message.text = message.originalText;
+        }
+      });
+    }
   }
 
   // Call this method whenever a new message is added

@@ -32,12 +32,19 @@
       <app-threed-viewer
         *ngIf="threeDAgent"
         [modelUrl]="modelUrl"
+        (switchToDrawing)="onSwitchToDrawing()"
         (switchModelEvent)="onSwitchToModelEditor()"
         style="display: block; height: 100%; width: 100%;">
       </app-threed-viewer>
 
       <app-three-with-upload
-      *ngIf="modelEditor" #threeWithUploadComponent [stlData]="generatedStlData" [buttonLayout]="buttonLayout" [movementAction]="movementAction" style="display:block; height:100%; width:100%">
+      *ngIf="modelEditor"
+      #threeWithUploadComponent
+      [stlData]="generatedStlData"
+      [buttonLayout]="buttonLayout"
+      [movementAction]="movementAction"
+      (switchAgentEvent)="switchTo3DViewer()"
+      style="display:block; height:100%; width:100%">
 
     </app-three-with-upload>
     </div>

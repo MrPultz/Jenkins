@@ -2,12 +2,6 @@
 <div class="chat-container">
   <div class="chat-layout">
     <div class="chat-section">
-      <!-- Welcome screen shown when no messages -->
-      <div *ngIf="messages.length === 0" class="welcome-screen">
-        <h1>Jenkins</h1>
-        <p>Ask to generate a 3D model (e.g. Remote control)</p>
-      </div>
-
       <!-- Chat messages shown after first message -->
       <div #chatContainer class="chat-messages" *ngIf="messages.length > 0">
         <div class="message-container" *ngFor="let message of messages">
@@ -92,11 +86,20 @@
       <!-- The Chat Input Section -->
       <div class="chat-input">
         <!-- Model selector for switching between models -->
-        <div class="model-selector">
-          <select [value]="useAnthropicModel ? 'claude' : 'deepseek'" (change)="onModelChange($event)">
-            <option value="deepseek">DeepSeek Model</option>
-            <option value="claude">Claude 3.7 Model</option>
-          </select>
+        <!-- Group the model selector and text toggle on the same line -->
+        <div class="input-options">
+          <div class="model-selector">
+            <select [value]="useAnthropicModel ? 'claude' : 'deepseek'" (change)="onModelChange($event)">
+              <option value="deepseek">DeepSeek Model</option>
+              <option value="claude">Claude 3.7 Model</option>
+            </select>
+          </div>
+          <div class="text-amount-toggle">
+            <label>
+              <input type="checkbox" [(ngModel)]="useLongText" (change)="onTextAmountChange($event)">
+              Use long text
+            </label>
+          </div>
         </div>
         <!-- Chat input content -->
         <div class="input-container">

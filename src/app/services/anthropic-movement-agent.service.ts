@@ -23,7 +23,7 @@ export class AnthropicMovementAgentService extends BaseMovementAgentService {
     return 'assets/agents/moveAgent.txt';
   }
 
-  processMovementInstruction(message: string): Observable<MovementResponse> {
+  processMovementInstruction(message: string, modelContext?: any): Observable<MovementResponse> {
     return from(this.loadSystemPromptIfNeeded()).pipe(
       map(() => this.systemPromptContent || this.getFallbackSystemPrompt()),
       switchMap(systemPrompt =>
@@ -35,7 +35,9 @@ export class AnthropicMovementAgentService extends BaseMovementAgentService {
           messages: [
             {
               role: 'user',
-              content: message
+              content: modelContext
+                ? `USER REQUEST: ${message}\n\nMODEL CONTEXT: ${JSON.stringify(modelContext, null, 2)}`
+                : message
             }
           ]
         }))

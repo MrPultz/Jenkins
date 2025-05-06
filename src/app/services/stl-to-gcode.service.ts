@@ -6,7 +6,8 @@ import {Observable} from "rxjs";
   providedIn: 'root'
 })
 export class StlToGcodeService {
-  private apiURL = 'http://localhost:3000';
+  //private apiURL = 'http://localhost:3000';
+  private apiURL = '/api/'; // <- Used when deployed
 
   constructor(private http: HttpClient) { }
 

@@ -7,12 +7,13 @@ import {Observable} from "rxjs";
   providedIn: 'root'
 })
 export class ConversionServiceService {
-  private apiURL = 'http://localhost:3000'
+  //private apiURL = 'http://localhost:3000/api/'
+  private apiURL = '/api/' // <- Used when deployed
 
   constructor(private http: HttpClient) { }
 
   convertScadToStl(scadCode: string): Observable<Blob> {
-    return this.http.post(`${this.apiURL}/api/convert-scad-to-stl`, { scadCode }, { responseType: 'blob'});
+    return this.http.post(`${this.apiURL}convert-scad-to-stl`, { scadCode }, { responseType: 'blob'});
   }
 
   convertStlToGcode(stlFile: File, printerType?: string, filamentType?: string, qualityProfile?: string): Observable<Blob> {
@@ -23,7 +24,7 @@ export class ConversionServiceService {
     if(filamentType) formData.append('filamentType', filamentType);
     if(qualityProfile) formData.append('qualityProfile', qualityProfile);
 
-    return this.http.post(`${this.apiURL}/api/convert-stl-to-gcode`, formData, { responseType: 'blob'});
+    return this.http.post(`${this.apiURL}convert-stl-to-gcode`, formData, { responseType: 'blob'});
   }
 
   convertScadToGcode(
@@ -39,7 +40,7 @@ export class ConversionServiceService {
       qualityProfile
     };
 
-    return this.http.post(`${this.apiURL}/api/convert-scad-to-gcode`, body, { responseType: 'blob'});
+    return this.http.post(`${this.apiURL}convert-scad-to-gcode`, body, { responseType: 'blob'});
   }
 }
 

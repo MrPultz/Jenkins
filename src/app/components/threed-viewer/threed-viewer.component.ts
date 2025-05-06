@@ -12,9 +12,9 @@ import {
   EventEmitter,
 } from '@angular/core';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
-import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import {Router} from "@angular/router";
 
 @Component({
@@ -27,6 +27,8 @@ import {Router} from "@angular/router";
 export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() modelUrl: string | null = null;
   @Output() switchModelEvent = new EventEmitter<void>();
+  @Output() switchToDrawing = new EventEmitter<void>();
+
 
   @ViewChild('mainCanvas') mainCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('miniViewport') miniViewportRef!: ElementRef<HTMLDivElement>;
@@ -96,6 +98,10 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   switchToModelEditor(): void {
     this.switchModelEvent.emit();
+  }
+
+  switchToDrawingEditor(): void {
+    this.switchToDrawing.emit();
   }
 
   submitModel(): void {
@@ -271,11 +277,14 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       mesh.scale.set(scale, scale, scale);
     }
 
+    // Fix orientation issue by applying rotation
+    mesh.rotation.x = -Math.PI / 2; // Rotate around X-axis to correct orientation
+
     // Apply position, accounting for scaling
     mesh.position.set(
       -center.x * scale,
-      -box.min.y * scale,
-      -center.z * scale
+      -center.z * scale, // Switch Y and Z axes because of the rotation
+      -center.y * scale
     );
 
     // Remove existing model if any
@@ -293,6 +302,7 @@ export class ThreedViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     console.log('Model added to scene successfully');
     console.log('Model position:', mesh.position);
     console.log('Model scale:', mesh.scale);
+    console.log('Model rotation:', mesh.rotation);
     console.log('Model dimensions:', {
       width: geometry.boundingBox!.max.x - geometry.boundingBox!.min.x,
       height: geometry.boundingBox!.max.y - geometry.boundingBox!.min.y,

@@ -1,10 +1,10 @@
 {
-  "/api": {
-    "target": "https://api.deepseek.ai",
+  "jenkins.pultz.tech": {
+    "target": "https://jenkins.pultz.tech",
     "secure": true,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/api": "/api/v1"
+      "^/jenkins.pultz.tech": "/"
     }
   }
 }

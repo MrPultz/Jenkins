@@ -24,14 +24,14 @@ export class DeepseekMovementAgentService extends BaseMovementAgentService {
     return 'assets/agents/moveAgent.txt';
   }
 
-  processMovementInstruction(message: string): Observable<MovementResponse> {
+  processMovementInstruction(message: string, modelContext?: any): Observable<MovementResponse> {
     return from(this.loadSystemPromptIfNeeded()).pipe(
       map(() => this.systemPromptContent || this.getFallbackSystemPrompt()),
       switchMap(systemPrompt =>
         from(this.openai.chat.completions.create({
           model: 'deepseek-chat',
-          temperature: 0.2,
           max_tokens: 1000,
+          temperature: 0.2,
           messages: [
             {
               role: 'system',
@@ -39,13 +39,15 @@ export class DeepseekMovementAgentService extends BaseMovementAgentService {
             },
             {
               role: 'user',
-              content: message
+              content: modelContext
+                ? `USER REQUEST: ${message}\n\nMODEL CONTEXT: ${JSON.stringify(modelContext, null, 2)}`
+                : message
             }
           ]
         }))
       ),
       map(completion => {
-        // Safely access the content
+        // Safely access the content using DeepSeek's response format
         const content = completion.choices?.[0]?.message?.content || '';
         return this.parseResponse(content);
       }),
