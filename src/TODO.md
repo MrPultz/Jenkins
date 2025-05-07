@@ -35,10 +35,31 @@
 - [X] Make chat always be scrolled to the bottom
 - [X] Remove so it does not change between move rotate and scale when pressing keys in chat.
 - [ ] We should probably write a better prompt to give it a much better context. And make it work better. Maybe add so that it does it based on the camera position?
+- [ ] get the option to pick between 5 different objects to custimize with
+
 
 ### Submit button
 - [X] Should get expanded view of model when converting to stl or gcode. OR should it? maybe just generate it when printing?
 
+### Fixes for evaluation
+- [ ] Remove clear canvas code, so that if you go back with redraw it's still there
+- [ ] Fix lang text written when drawing too.
+- [ ] Button to get back to 3DView -> make a boolean to check if we have already drawn something or else don't show the button.
+- [ ] Make unicorn horn remember position if you go back and forth maybe?
+- [ ] padding at bottom to not compulate with apple.
+- [ ] Switch orbit on and off -> button.
+- [ ] remove ability to choose model -> default claude
+- [ ] Use long text rename to give detailed information
+- [ ] Change audio icon to have audio wave.
+- [ ] Be able to stop the audio by pressing again.
+- [ ] Be able to stop response from AI.
+- [ ] Make load dots and circle loading same color.
+- [ ] Make submit button disabled when nothing is written or drawn. (Submit written and submit drawing)
+- [ ] Make unicorn horn always on a surface it can be seen on.
+- [ ] Fix speak function has something to do with the hosting of ws://
+
+### If got time
+- [ ] Make toggle button to move chat in and out.
 
 ### Maintainance
 - [X] Host it on a server
@@ -53,6 +74,7 @@
 - [ ] Make a consultant prompt for the chat. That then knows based on the message which prompt to use.
 - [ ] Implement so that it can then know if it should contact Meshy.ai to generate a model to get to add where ever you want.
 - [ ] Setup so we can try and print it over network - skip for now
+- [ ] Maybe add so it possible to have multiple object to move around and place, maybe add a list view and possible to press them like blender.
 
 
 ### Notes:
