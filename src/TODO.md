@@ -57,6 +57,8 @@
 - [ ] Make submit button disabled when nothing is written or drawn. (Submit written and submit drawing)
 - [ ] Make unicorn horn always on a surface it can be seen on.
 - [ ] Fix speak function has something to do with the hosting of ws://
+- [ ] Bool options to generate 3 objs
+- [ ] add multiple horns
 
 ### If got time
 - [ ] Make toggle button to move chat in and out.
