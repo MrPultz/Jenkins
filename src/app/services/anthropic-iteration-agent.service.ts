@@ -12,13 +12,14 @@ import {HttpClient} from "@angular/common/http";
 export class AnthropicIterationAgentService extends AnthropicChatAgentService{
   private buttonLayout: any;
   private buttonParams: any;
+  private abortController: AbortController | null = null;
 
   constructor(http: HttpClient) {
     super(http);
   }
 
   protected override getSystemPromptPath(): string {
-    return '/assets/agents/theOnePrompt.txt'; // Same prompt path as original
+    return '/assets/agents/theOnePromptWithMultiple.txt'; // Same prompt path as original
   }
 
   protected override getFallbackSystemPrompt(): string {
@@ -37,29 +38,76 @@ export class AnthropicIterationAgentService extends AnthropicChatAgentService{
   extractScadParameters(responseText: string): {
     cleanedResponse: string,
     buttonLayout: number[][] | null,
-    buttonParams: any
+    buttonParams: any,
+    designs?: any[]
   } {
-    let result = {
+    // Default return values
+    let result: {
+      cleanedResponse: string,
+      buttonLayout: number[][] | null,
+      buttonParams: any,
+      designs?: any[]
+    } = {
       cleanedResponse: responseText,
-      buttonLayout: null as number[][] | null,
+      buttonLayout: null,
       buttonParams: null
     };
 
-    if (responseText.includes('SCAD Parameters')) {
-      try {
+    try {
+      // First, try to extract JSON data if present
+      const jsonMatch = responseText.match(/\{[\s\S]*"designs"[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonStr = jsonMatch[0];
+        const jsonData = JSON.parse(jsonStr);
+
+        if (jsonData.designs && Array.isArray(jsonData.designs) && jsonData.designs.length > 0) {
+          // Add designs property only when we have designs
+          result = {
+            ...result,
+            designs: jsonData.designs
+          };
+
+          // Use the first design for buttonLayout and buttonParams
+          const firstDesign = jsonData.designs[0];
+          if (firstDesign.button_layout) {
+            result.buttonLayout = firstDesign.button_layout;
+          }
+          if (firstDesign.button_params) {
+            result.buttonParams = firstDesign.button_params;
+          }
+
+          // Clean the response by removing the JSON part
+          const jsonStart = responseText.indexOf('{');
+          const jsonEnd = responseText.lastIndexOf('}') + 1;
+          if (jsonStart !== -1 && jsonEnd !== -1) {
+            result.cleanedResponse =
+              responseText.substring(0, jsonStart).trim() +
+              (jsonEnd < responseText.length ? '\n\n' + responseText.substring(jsonEnd).trim() : '');
+          }
+
+          return result;
+        }
+      }
+
+      // Fall back to the original parsing logic for SCAD Parameters format
+      if (responseText.includes('SCAD Parameters')) {
         // Look for button_layout section
         if (responseText.includes('button_layout')) {
+          // Find all numeric patterns that could represent button coordinates
           const buttonPattern = /\[\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)(?:\s*,\s*(-?\d+\.?\d*))?\s*\]/g;
           const buttons = [];
           let match;
 
+          // Extract all button matches from the text
           while ((match = buttonPattern.exec(responseText)) !== null) {
+            // Create button with x, y, size values (all required)
             const button = [
               parseFloat(match[1]),
               parseFloat(match[2]),
               parseFloat(match[3])
             ];
 
+            // Add width if it exists
             if (match[4]) {
               button.push(parseFloat(match[4]));
             }
@@ -72,32 +120,29 @@ export class AnthropicIterationAgentService extends AnthropicChatAgentService{
           }
         }
 
+        // Find the button params section
         const buttonParamsMatch = responseText.match(/button_params\s*=\s*\[([\s\S]*?)\];/);
         if (buttonParamsMatch && buttonParamsMatch[1]) {
           const buttonParamsString = `[${buttonParamsMatch[1]}]`;
+          // Convert string representation to actual array
           result.buttonParams = new Function(`return ${buttonParamsString}`)();
         }
 
-        // Use a more aggressive approach with regex to remove the SCAD Parameters section
-        const cleanedText = responseText.replace(/## SCAD Parameters[\s\S]*?button_params.*?\];/s, '');
+        // Remove SCAD Parameters section but keep "Would you like to:" part
+        const scadSectionStart = responseText.indexOf('SCAD Parameters');
+        const wouldYouLikeIndex = responseText.indexOf('Would you like to:');
 
-        // If that didn't work, try alternative regex patterns
-        if (cleanedText === responseText) {
-          // Try with just "SCAD Parameters" without the ##
-          result.cleanedResponse = responseText.replace(/SCAD Parameters[\s\S]*?button_params.*?\];/s, '');
-        } else {
-          result.cleanedResponse = cleanedText;
+        if (scadSectionStart !== -1 && wouldYouLikeIndex !== -1) {
+          // Combine the text before SCAD Parameters and after the button_params
+          result.cleanedResponse =
+            responseText.substring(0, scadSectionStart).trim() +
+            '\n\n' +
+            responseText.substring(wouldYouLikeIndex).trim();
         }
-
-        // Clean up any leftover backticks code blocks that might be empty
-        result.cleanedResponse = result.cleanedResponse.replace(/```[\s]*```/g, '');
-
-        // Remove any trailing newlines and trim
-        result.cleanedResponse = result.cleanedResponse.trim();
-
-      } catch (error) {
-        console.error('Error extracting SCAD parameters:', error);
       }
+    } catch (error) {
+      console.error('Error extracting parameters:', error);
+      // If there's an error, return the original text
     }
 
     return result;

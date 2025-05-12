@@ -8,8 +8,8 @@ import {Observable} from "rxjs";
   providedIn: 'root'
 })
 export class ScadConvertService {
-  private apiURL = 'http://localhost:3000/api/' // <- Used when local
-  //private apiURL = '/api/' // <- Used when deployed
+  //private apiURL = 'http://localhost:3000/api/' // <- Used when local
+  private apiURL = '/api/' // <- Used when deployed
 
   constructor(private http: HttpClient) { }
 

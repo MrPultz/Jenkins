@@ -36,17 +36,22 @@ export class ChatComponent implements OnChanges, OnInit {
   @Input() isSpeaking = false;
   @Input() isRecording = false;
   @Input() useAnthropicModel = false;
+  @Input() usePreviewMode = false;
+  @Output() previewModeChanged = new EventEmitter<boolean>();
+  @Output() previewCountChanged = new EventEmitter<number>();
 
   @Output() sendMessageEvent = new EventEmitter<string>();
   @Output() optionSelectedEvent = new EventEmitter<{option: any, message: any}>();
   @Output() speakTextEvent = new EventEmitter<string>();
   @Output() toggleRecordingEvent = new EventEmitter<void>();
   @Output() modelChangeEvent = new EventEmitter<boolean>();
+  @Output() cancelResponseEvent = new EventEmitter<void>();
 
   @ViewChild('chatContainer') chatContainer!: ElementRef;
 
   private shouldAutoScroll = true;
   private userScrolled = false;
+  private previewCount = 3;
   useLongText = false;
 
   inputMessage = '';
@@ -69,6 +74,40 @@ What would you like to create today?`,
       isSystem: true,
       isUser: false
     });
+  }
+
+  togglePreviewMode(): void {
+    this.usePreviewMode = !this.usePreviewMode;
+    this.previewModeChanged.emit(this.usePreviewMode);
+  }
+
+  // Method to send a message with preview count
+  sendMessageWithPreviewCount(message: string, count: number): void {
+    this.sendMessageEvent.emit(`${message} [PREVIEW_COUNT:${count}]`);
+  }
+  onPreviewCountChange(value: number): void {
+    this.previewCount = value;
+    this.previewCountChanged.emit(this.previewCount);
+  }
+
+
+
+// Replace the stopAiResponse method with this
+  stopAiResponse(): void {
+    this.cancelResponseEvent.emit();
+  }
+
+  toggleSpeech(text: string): void {
+    if (this.isSpeaking) {
+      // Stop speaking if already in progress
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        this.isSpeaking = false;
+      }
+    } else {
+      // Start speaking
+      this.readResponseAloud(text);
+    }
   }
 
   ngAfterViewInit() {

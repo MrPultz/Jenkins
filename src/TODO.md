@@ -43,21 +43,21 @@
 
 ### Fixes for evaluation
 - [ ] Remove clear canvas code, so that if you go back with redraw it's still there
-- [ ] Fix lang text written when drawing too.
+- [X] Fix lang text written when drawing too.
 - [ ] Button to get back to 3DView -> make a boolean to check if we have already drawn something or else don't show the button.
 - [ ] Make unicorn horn remember position if you go back and forth maybe?
 - [ ] padding at bottom to not compulate with apple.
 - [ ] Switch orbit on and off -> button.
 - [ ] remove ability to choose model -> default claude
-- [ ] Use long text rename to give detailed information
-- [ ] Change audio icon to have audio wave.
-- [ ] Be able to stop the audio by pressing again.
-- [ ] Be able to stop response from AI.
-- [ ] Make load dots and circle loading same color.
-- [ ] Make submit button disabled when nothing is written or drawn. (Submit written and submit drawing)
+- [X] Use long text rename to give detailed information
+- [X] Change audio icon to have audio wave.
+- [X] Be able to stop the audio by pressing again.
+- [ ] Be able to stop response from AI. -> Later
+- [X] Make load dots and circle loading same color.
+- [X] Make submit button disabled when nothing is written or drawn. (Submit written and submit drawing)
 - [ ] Make unicorn horn always on a surface it can be seen on.
 - [ ] Fix speak function has something to do with the hosting of ws://
-- [ ] Bool options to generate 3 objs
+- [X] Bool options to generate 3 objs
 - [ ] add multiple horns
 
 ### If got time

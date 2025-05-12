@@ -15,7 +15,7 @@ export class IterationAgentService extends BaseChatAgentService{
   }
 
   protected override getSystemPromptPath(): string {
-    return '/assets/agents/theOnePrompt.txt'; // Change this to a txt file that is right.
+    return '/assets/agents/theOnePromptWithMultiple.txt'; // Change this to a txt file that is right.
   }
 
   protected override getFallbackSystemPrompt(): string {
@@ -37,17 +37,59 @@ export class IterationAgentService extends BaseChatAgentService{
   extractScadParameters(responseText: string): {
     cleanedResponse: string,
     buttonLayout: number[][] | null,
-    buttonParams: any
+    buttonParams: any,
+    designs?: any[]
   } {
     // Default return values
-    let result = {
+    let result: {
+      cleanedResponse: string,
+      buttonLayout: number[][] | null,
+      buttonParams: any,
+      designs?: any[]
+    } = {
       cleanedResponse: responseText,
-      buttonLayout: null as number[][] | null,
+      buttonLayout: null,
       buttonParams: null
     };
 
-    if (responseText.includes('SCAD Parameters')) {
-      try {
+    try {
+      // First, try to extract JSON data if present
+      const jsonMatch = responseText.match(/\{[\s\S]*"designs"[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonStr = jsonMatch[0];
+        const jsonData = JSON.parse(jsonStr);
+
+        if (jsonData.designs && Array.isArray(jsonData.designs) && jsonData.designs.length > 0) {
+          // Add designs property only when we have designs
+          result = {
+            ...result,
+            designs: jsonData.designs
+          };
+
+          // Use the first design for buttonLayout and buttonParams
+          const firstDesign = jsonData.designs[0];
+          if (firstDesign.button_layout) {
+            result.buttonLayout = firstDesign.button_layout;
+          }
+          if (firstDesign.button_params) {
+            result.buttonParams = firstDesign.button_params;
+          }
+
+          // Clean the response by removing the JSON part
+          const jsonStart = responseText.indexOf('{');
+          const jsonEnd = responseText.lastIndexOf('}') + 1;
+          if (jsonStart !== -1 && jsonEnd !== -1) {
+            result.cleanedResponse =
+              responseText.substring(0, jsonStart).trim() +
+              (jsonEnd < responseText.length ? '\n\n' + responseText.substring(jsonEnd).trim() : '');
+          }
+
+          return result;
+        }
+      }
+
+      // Fall back to the original parsing logic for SCAD Parameters format
+      if (responseText.includes('SCAD Parameters')) {
         // Look for button_layout section
         if (responseText.includes('button_layout')) {
           // Find all numeric patterns that could represent button coordinates
@@ -96,10 +138,10 @@ export class IterationAgentService extends BaseChatAgentService{
             '\n\n' +
             responseText.substring(wouldYouLikeIndex).trim();
         }
-      } catch (error) {
-        console.error('Error extracting SCAD parameters:', error);
-        // If there's an error, return the original text
       }
+    } catch (error) {
+      console.error('Error extracting parameters:', error);
+      // If there's an error, return the original text
     }
 
     return result;

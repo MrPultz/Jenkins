@@ -4,11 +4,15 @@
     [isLoading]="isLoading"
     [isSpeaking]="isSpeaking"
     [isRecording]="isRecording"
+    [usePreviewMode]="usePreviewMode"
     (sendMessageEvent)="onSendMessage($event)"
     (optionSelectedEvent)="onOptionSelected($event)"
     (speakTextEvent)="onSpeakText($event)"
     (toggleRecordingEvent)="onToggleRecording()"
-    (modelChangeEvent)="toggleModel($event)">
+    (previewModeChanged)="onPreviewModeChanged($event)"
+    (previewCountChanged)="setPreviewCount($event)"
+    (modelChangeEvent)="toggleModel($event)"
+    (cancelResponseEvent)="cancelAiResponse()">
   </app-chat>
 
   <!-- The Preview Section - always in DOM but visibility controlled by CSS -->
@@ -21,6 +25,20 @@
           </svg>
         </div>
       </div>
+      <!-- Preview designs container -->
+      <div *ngIf="showingPreviews" class="preview-designs-container">
+        <h3>Select a design to generate</h3>
+        <div class="preview-designs-grid">
+          <app-preview-card
+            *ngFor="let design of previewDesigns"
+            [design]="design"
+            [isSelected]="selectedDesignId === design.id"
+            (selectDesign)="onDesignSelected($event)">
+          </app-preview-card>
+        </div>
+      </div>
+
+
       <!-- Drawing component -->
       <app-drawing
         *ngIf="isDrawing"
