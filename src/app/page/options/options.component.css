@@ -1,0 +1,56 @@
+.options-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.option-section {
+  margin-bottom: 30px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+input[type="number"] {
+  width: 60px;
+  padding: 5px;
+}
+
+.help-text {
+  margin-top: 5px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.form-actions {
+  margin-top: 20px;
+}
+
+.primary-button {
+  padding: 8px 16px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  background-color: #3367d6;
+}
+
+.save-message {
+  margin-left: 10px;
+  color: #4caf50;
+}

@@ -14,6 +14,7 @@ import {DeepseekMovementAgentService} from "../../services/deepseek-movement-age
 import {AnthropicMovementAgentService} from "../../services/anthropic-movement-agent.service";
 import {PreviewGeneratorService, PreviewDesign} from "../../services/preview-generator.service";
 import {PreviewCardComponent} from "../../components/preview-card/preview-card.component";
+import { SettingsService } from "../../services/settings.service";
 
 interface ChatMessage {
   id: number;
@@ -53,7 +54,7 @@ export class MainComponent implements OnInit, OnDestroy{
   currentButtonLayout: any = null;
   currentButtonParams: any = null;
 
-  useAnthropicModel = false;
+  useAnthropicModel = true;
 
   messages: any[] = [];
   isLoading = false;
@@ -75,10 +76,10 @@ export class MainComponent implements OnInit, OnDestroy{
   movementAction: MovementResponse | null = null;
 
   // Images
-  showPreviewOptions: boolean = false;
+  showPreviewOptions: boolean = true;
   previewDesigns: PreviewDesign[] = [];
   selectedDesignId: string | null = null;
-  usePreviewMode: boolean = false;
+  usePreviewMode: boolean = true;
   showingPreviews: boolean = false;
 
 
@@ -88,7 +89,8 @@ export class MainComponent implements OnInit, OnDestroy{
     private scadConvertService: ScadConvertService,
     private deepseekMovementAgent: DeepseekMovementAgentService,
     private anthropicMovementAgent: AnthropicMovementAgentService,
-    private previewGeneratorService: PreviewGeneratorService
+    private previewGeneratorService: PreviewGeneratorService,
+    private settingsService: SettingsService
   ) {
     // Initialize the current movement agent based on the default model
     this.currentMovementAgent = this.useAnthropicModel ?
@@ -120,7 +122,18 @@ export class MainComponent implements OnInit, OnDestroy{
   }
 
   ngOnInit(): void {
+    // Subscribe to settings
+    this.settingsService.getShowPreviewOptions().subscribe(value => {
+      this.showPreviewOptions = value;
+    });
 
+    this.settingsService.getUsePreviewMode().subscribe(value => {
+      this.usePreviewMode = value;
+    });
+
+    this.settingsService.getPreviewCount().subscribe(value => {
+      this.previewCount = value;
+    });
   }
 
   // Update the ngAfterViewInit method

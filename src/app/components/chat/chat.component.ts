@@ -35,8 +35,8 @@ export class ChatComponent implements OnChanges, OnInit {
   @Input() isLoading = false;
   @Input() isSpeaking = false;
   @Input() isRecording = false;
-  @Input() useAnthropicModel = false;
-  @Input() usePreviewMode = false;
+  @Input() useAnthropicModel = true;
+  @Input() usePreviewMode = true;
   @Output() previewModeChanged = new EventEmitter<boolean>();
   @Output() previewCountChanged = new EventEmitter<number>();
 

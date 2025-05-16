@@ -1,4 +1,4 @@
-import {Component, ElementRef, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, ElementRef, EventEmitter, OnInit, Output, Input, ViewChild} from '@angular/core';
 import {FormsModule} from "@angular/forms";
 
 @Component({
@@ -11,6 +11,7 @@ import {FormsModule} from "@angular/forms";
   styleUrl: './drawing.component.css'
 })
 export class DrawingComponent implements OnInit {
+  @Input() previewModeEnabled = false;
   @Output() drawingSubmitted = new EventEmitter<string>();
 
   @ViewChild('canvas', { static: true }) canvas!: ElementRef<HTMLCanvasElement>;

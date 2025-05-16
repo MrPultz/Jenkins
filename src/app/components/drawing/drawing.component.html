@@ -32,6 +32,6 @@
       <input type="range" min="1" max="20" [(ngModel)]="lineWidth">
     </div>
 
-    <button class="control-button submit-button" (click)="submitDrawing()">Submit Drawing</button>
+    <button class="control-button submit-button" (click)="submitDrawing()" [disabled]="previewModeEnabled">Submit Drawing</button>
   </div>
 </div>

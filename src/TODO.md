@@ -60,6 +60,11 @@
 - [X] Bool options to generate 3 objs
 - [ ] add multiple horns
 
+### Most important
+- [ ] Remove Use long text
+- [ ] Make preview mode always active
+- [ ] Make it use claude model always
+
 ### If got time
 - [ ] Make toggle button to move chat in and out.
 

@@ -93,7 +93,7 @@
       <div class="chat-input">
         <!-- Model selector for switching between models -->
         <!-- Group the model selector and text toggle on the same line -->
-        <div class="input-options">
+        <!--<div class="input-options">
           <div class="model-selector">
             <select [value]="useAnthropicModel ? 'claude' : 'deepseek'" (change)="onModelChange($event)">
               <option value="deepseek">DeepSeek Model</option>
@@ -114,7 +114,7 @@
                 Preview Mode
             </label>
           </div>
-        </div>
+        </div>-->
         <!-- Chat input content -->
         <div class="input-container">
           <input type="text" placeholder="Describe an object..." [(ngModel)]="inputMessage" (keyup.enter)="sendMessage()">

@@ -114,3 +114,57 @@ app-chat {
     height: 50%;
   }
 }
+
+/* Modify the preview container styles in src/app/page/main/main.component.css */
+.preview-designs-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+}
+
+.preview-designs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Creates a 2-column grid */
+  grid-gap: 15px;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Add these styles for the preview cards directly in main.component.css */
+.design-card {
+  width: 100%;
+  position: relative;
+  aspect-ratio: 1/1; /* Makes the card square */
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  background-color: #2a2a2a;
+}
+
+.design-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.design-card.selected {
+  border: 2px solid #FF4000;
+  box-shadow: 0 0 10px rgba(255, 64, 0, 0.5);
+}
+
+.design-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 600px) {
+  .preview-designs-grid {
+    grid-gap: 10px;
+    padding: 5px;
+  }
+}

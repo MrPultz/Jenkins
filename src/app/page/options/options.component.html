@@ -1,0 +1,33 @@
+<div class="options-container">
+  <h2>Preview Options</h2>
+
+  <div class="option-section">
+    <div class="form-group">
+      <label>
+        <input type="checkbox" [(ngModel)]="showPreviewOptions" (change)="updateSettings()">
+        Show Preview Options
+      </label>
+      <p class="help-text">Enable to show the design preview selection interface.</p>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="checkbox" [(ngModel)]="usePreviewMode" (change)="updateSettings()">
+        Use Preview Mode
+      </label>
+      <p class="help-text">Generate multiple previews instead of direct 3D model generation.</p>
+    </div>
+
+    <div class="form-group">
+      <label>Number of Previews:
+        <input type="number" [(ngModel)]="previewCount" (change)="updateSettings()" min="1" max="10">
+      </label>
+      <p class="help-text">How many design previews to generate (1-10).</p>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button (click)="navigateToMain()" class="primary-button">Back to Main</button>
+    <span class="save-message" *ngIf="showSavedMessage">Settings saved!</span>
+  </div>
+</div>

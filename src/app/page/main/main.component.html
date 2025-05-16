@@ -27,7 +27,6 @@
       </div>
       <!-- Preview designs container -->
       <div *ngIf="showingPreviews" class="preview-designs-container">
-        <h3>Select a design to generate</h3>
         <div class="preview-designs-grid">
           <app-preview-card
             *ngFor="let design of previewDesigns"
@@ -42,6 +41,7 @@
       <!-- Drawing component -->
       <app-drawing
         *ngIf="isDrawing"
+        [previewModeEnabled]="usePreviewMode"
       (drawingSubmitted)="sendDrawingToChat($event)">
 
       </app-drawing>
