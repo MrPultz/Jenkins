@@ -670,8 +670,10 @@ export class MainComponent implements OnInit, OnDestroy{
       type: 'button',
       x: button[0],
       y: button[1],
-      size: button[2],
-      width: button.length > 3 ? button[3] : 0 // Use width if provided, otherwise default to 0
+      text: button[2],
+      size: button[3],
+      width: button.length > 3 ? button[4] : 0 // Use width if provided, otherwise default to 0
+
     }));
 
     // Format button parameters as expected

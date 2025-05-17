@@ -6,9 +6,35 @@
     <button class="control-btn" (click)="setTransformMode('translate')">Move</button>
     <button class="control-btn" (click)="setTransformMode('rotate')">Rotate</button>
     <button class="control-btn" (click)="setTransformMode('scale')">Scale</button>
-    <button class="control-btn" (click)="toggleBoundingBoxVisibility()">Toggle Bounds</button>
     <button class="control-btn" (click)="exportCombined()">Export STL</button>
     <button class="control-btn" (click)="submitToBackend()">Start Printing</button>
+    <button class="control-btn" (click)="showModelSelector()" title="Select Decoration Model">
+      <span class="material-icons">category</span>
+    </button>
+  </div>
+
+  <div class="model-selector-popup" *ngIf="isModelSelectorOpen">
+    <div class="model-selector-content">
+      <div class="model-selector-header">
+        <h3>Select Model</h3>
+        <button (click)="closeModelSelector()" class="close-button">×</button>
+      </div>
+      <div class="model-selector-grid">
+        <div
+          *ngFor="let model of availableModels"
+          class="model-option"
+          [class.selected]="currentModelId === model.id"
+          (click)="selectModel(model.id)">
+          <div class="model-thumbnail">
+            <img [src]="'/assets/images/thumbnails/' + model.id + '.png'"
+                 [alt]="model.name"
+                 class="model-image"
+                 (error)="handleImageError($event)">
+          </div>
+          <div class="model-name">{{model.name}}</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <button class="switch-agent-btn" (click)="switchAgent()">
