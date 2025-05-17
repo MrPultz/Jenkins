@@ -31,14 +31,128 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
   @Input() baseModelGeometry?: THREE.BufferGeometry;
   @Input() stlData: ArrayBuffer | null = null;
 
+  private isFirstLoad = true;
+
   @Input() set movementAction(action: MovementResponse | null) {
     if (action) {
       this.applyMovementAction(action);
     }
   }
 
+  // Add to your component properties
+  public availableModels = [
+    { id: 'unicornHorn', name: 'Unicorn Horn', path: 'assets/previewModel/unicornHorn.fbx' },
+    { id: 'flower', name: 'flower', path: 'assets/previewModel/flower.fbx' },
+    { id: 'duck', name: 'duck', path: 'assets/previewModel/duck.fbx' },
+    { id: 'head', name: 'head', path: 'assets/previewModel/head.fbx' }
+  ];
+  public currentModelId = 'unicornHorn';
+  public isModelSelectorOpen = false;
+
   hasBaseMesh(): boolean {
     return !!this.baseMesh;
+  }
+
+  // Add this method to show the model selector popup
+  showModelSelector(): void {
+    this.isModelSelectorOpen = true;
+  }
+
+  handleImageError(event: any): void {
+    // Set a fallback image when loading fails
+    event.target.src = '/assets/images/thumbnails/placeholder.png';
+    // If the placeholder also fails, show a colored div instead
+    event.target.onerror = () => {
+      event.target.style.display = 'none';
+      event.target.parentElement.classList.add('placeholder-thumbnail');
+    }
+  }
+
+  // Add this method to select a model and close the popup
+  selectModel(modelId: string): void {
+    if (this.currentModelId !== modelId) {
+      this.currentModelId = modelId;
+
+      // Remove existing placement mesh
+      if (this.placementMesh) {
+        // Detach from transform controls first
+        if (this.transformControls && this.transformControls.object === this.placementMesh) {
+          this.transformControls.detach();
+        }
+
+        this.scene.remove(this.placementMesh);
+        this.placementMesh = undefined;
+      }
+
+      // Load the selected model
+      const selectedModel = this.availableModels.find(model => model.id === modelId);
+      if (selectedModel) {
+        this.loadModel(selectedModel.path);
+      }
+    }
+
+    this.isModelSelectorOpen = false;
+  }
+
+// Add this method to close the popup without selecting
+  closeModelSelector(): void {
+    this.isModelSelectorOpen = false;
+  }
+
+  private loadModel(modelPath: string): void {
+    const fbxLoader = new FBXLoader();
+
+    fbxLoader.load(modelPath, (object) => {
+      // Set up materials
+      object.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+          child.material = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 0.3,
+            roughness: 0.4,
+            clearcoat: 0.5
+          });
+          child.castShadow = true;
+        }
+      });
+
+      // Create a pivot group
+      const pivotGroup = new THREE.Group();
+
+      // Get the model's bounding box
+      const modelBox = new THREE.Box3().setFromObject(object);
+
+      // Fix the pivot point - adjust position so bottom is at origin
+      object.position.y = -modelBox.min.y;
+
+      // Add to pivot group
+      pivotGroup.add(object);
+      this.scene.add(pivotGroup);
+
+      // Set reference and scale
+      this.placementMesh = pivotGroup;
+      const scaleFactor = 0.5;
+      this.placementMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+      if (this.baseMesh) {
+        // Place model on top center of base model
+        this.placeHornOnTop();
+
+        // Attach to transform controls
+        this.transformControls.attach(this.placementMesh);
+        this.transformControls.setMode('translate');
+
+        // Store valid state
+        this.lastValidTransform.position.copy(this.placementMesh.position);
+        this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
+        this.lastValidTransform.scale.copy(this.placementMesh.scale);
+      }
+
+      // Force render update
+      this.renderer.render(this.scene, this.camera);
+    }, undefined, (error) => {
+      console.error('Error loading model:', error);
+    });
   }
 
 // Public method to get model context
@@ -146,13 +260,22 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
   constructor(private stlToGcodeService: StlToGcodeService) {}
 
   ngOnInit() {
+    // Initialize the scene
     this.initScene();
 
+    // First load the base model
     // If we already have STL data, try to load it
     if (this.stlData) {
       setTimeout(() => {
         this.loadStlFromData(this.stlData as ArrayBuffer);
       }, 100);
+    }
+
+    // Then show model selector for the decoration on first load
+    if (this.isFirstLoad) {
+      // Show model selector after base model is loaded
+      setTimeout(() => this.showModelSelector(), 500);
+      this.isFirstLoad = false;
     }
   }
 
@@ -272,90 +395,27 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
   setButtonsFromLayout(buttonLayout: number[][]): void {
     if (!buttonLayout || !buttonLayout.length || !this.baseMesh) return;
 
-    // Clear existing
+    // Clear existing exclusion zones
     this.buttonExclusionZones = [];
+
+    // Remove any previous button visualizations
     this.scene.children.forEach(child => {
-      if (child.userData && child.userData['isButtonHelper']) {
+      if (child.userData && child.userData['isButton']) {
         this.scene.remove(child);
       }
     });
 
-    // Get base dimensions
+    // Get base dimensions but don't visualize anything
     const baseBox = new THREE.Box3().setFromObject(this.baseMesh);
-    const baseSize = baseBox.getSize(new THREE.Vector3());
-    const baseCenter = baseBox.getCenter(new THREE.Vector3());
 
-    // Use the smaller of width/height for button sizing to maintain proportions
-    const baseSizeReference = Math.min(baseSize.x, baseSize.z); // Changed to use x and z dimensions
-
-    console.log('Base model dimensions:', {
-      size: baseSize,
-      center: baseCenter,
-      reference: baseSizeReference
-    });
-
-    // For each button in layout
+    // Store button information for internal use only without creating visual elements
     buttonLayout.forEach(button => {
-      if (button.length < 3) return;
-
-      // Get button parameters
-      const xCoord = button[0];
-      const yCoord = button[1];
-      const sizePercent = button[2];
-
-      // Calculate position on top surface
-      // Adjust coordinates to match the top face of the model
-      const buttonX = baseCenter.x + xCoord;
-      const buttonZ = baseCenter.z + yCoord; // Use yCoord for z-axis on top surface
-      const buttonY = baseBox.max.y; // Position at the top of the model
-
-      // Size based on the reference dimension
-      const buttonSize = (sizePercent / 100) * baseSizeReference;
-      const buttonRadius = buttonSize / 2;
-      const buttonDepth = baseSize.y * 0.15; // Height relative to model's y-dimension
-
-      // Create visual indicator - cylinder pointing upward
-      const cylinderGeometry = new THREE.CylinderGeometry(buttonRadius, buttonRadius, buttonDepth, 32);
-      // No rotation needed - cylinder should point upward by default
-
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xff0000,
-        transparent: true,
-        opacity: 0.3
-      });
-
-      const cylinderMesh = new THREE.Mesh(cylinderGeometry, material);
-      cylinderMesh.position.set(buttonX, buttonY + buttonDepth/2, buttonZ); // Position above surface
-      cylinderMesh.userData = { 'isButtonHelper': true };
-      this.scene.add(cylinderMesh);
-
-      // Add position marker
-      const positionMarker = new THREE.Mesh(
-        new THREE.SphereGeometry(0.05),
-        new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-      );
-      positionMarker.position.set(buttonX, buttonY, buttonZ);
-      positionMarker.userData = { 'isButtonHelper': true };
-      this.scene.add(positionMarker);
-
-      // Create exclusion zone box - extending upward from the surface
-      const boxMin = new THREE.Vector3(
-        buttonX - buttonRadius,
-        buttonY,
-        buttonZ - buttonRadius
-      );
-
-      const boxMax = new THREE.Vector3(
-        buttonX + buttonRadius,
-        buttonY + buttonDepth,
-        buttonZ + buttonRadius
-      );
-
-      this.buttonExclusionZones.push(new THREE.Box3(boxMin, boxMax));
+      if (button.length >= 3) {
+        // Just parse the button data but don't create visual elements
+        const [x, y, text] = button;
+        // Process button data only for logical/functional aspects
+      }
     });
-
-    // Update placement areas
-    this.updateValidPlacementAreas();
 
     // Render scene
     this.renderer.render(this.scene, this.camera);
@@ -384,59 +444,7 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
   }
 
   private updateValidPlacementAreas(): void {
-    if (!this.baseMesh) return;
-
-    // Clear existing placement zones and visualizations
-    this.clearBoundingBoxHelpers();
-
-    // Remove any additional visualization meshes
-    this.scene.children.forEach(child => {
-      if (child.userData && (
-        child.userData['isPlacementHelper'] ||
-        child.userData['isValidPlacementArea'])) {
-        this.scene.remove(child);
-      }
-    });
-
-    // Get the base mesh dimensions
-    const rawBox = new THREE.Box3().setFromObject(this.baseMesh);
-    const size = rawBox.getSize(new THREE.Vector3());
-    const center = rawBox.getCenter(new THREE.Vector3());
-
-    // Clear previous zones
-    this.validPlacementZones = [];
-
-    // Instead of creating separate zones for each face, create one zone
-    // that encompasses the entire model with a small padding
-    const padding = 0.05; // Small padding to ensure the model surface is included
-
-    const modelZone = new THREE.Box3(
-      new THREE.Vector3(
-        rawBox.min.x - padding,
-        rawBox.min.y - padding,
-        rawBox.min.z - padding
-      ),
-      new THREE.Vector3(
-        rawBox.max.x + padding,
-        rawBox.max.y + padding,
-        rawBox.max.z + padding
-      )
-    );
-
-    // Add this zone as the valid placement area
-    this.validPlacementZones.push(modelZone);
-
-    // For debugging - visualize the valid placement zone (optional)
-    if (false) { // Set to true if you want to visualize
-      const zoneSize = modelZone.getSize(new THREE.Vector3());
-      const zoneCenter = modelZone.getCenter(new THREE.Vector3());
-
-      const boxHelper = new THREE.Box3Helper(modelZone, 0x00ff00);
-      boxHelper.userData = { 'isPlacementHelper': true };
-      this.scene.add(boxHelper);
-    }
-
-    // Update the scene
+    // Do nothing - no visualization
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -698,128 +706,14 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
     setTimeout(() => this.generateValidPlacementAreas(), 500);
   }
 
+  // Replace the loadUnicornHorn method with this
   private loadUnicornHorn(): void {
-    const fbxLoader = new FBXLoader();
-
-    fbxLoader.load('assets/previewModel/unicornHorn.fbx', (object) => {
-      // Set up materials
-      object.traverse(child => {
-        if (child instanceof THREE.Mesh) {
-          child.material = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            metalness: 0.3,
-            roughness: 0.4,
-            clearcoat: 0.8,
-            clearcoatRoughness: 0.2,
-            transparent: true,
-            opacity: 0.8
-          });
-          child.castShadow = true;
-        }
-      });
-
-      // Create a pivot group
-      const pivotGroup = new THREE.Group();
-
-      // Get the horn's bounding box
-      const hornBox = new THREE.Box3().setFromObject(object);
-
-      // Fix the pivot point - adjust position so bottom is at origin
-      object.position.y = -hornBox.min.y;
-
-      // Apply rotation to match base model orientation
-      //object.rotation.x = -Math.PI/2;
-
-      // Add to pivot group
-      pivotGroup.add(object);
-      this.scene.add(pivotGroup);
-
-      // Set reference and scale
-      this.placementMesh = pivotGroup;
-      const scaleFactor = 0.5;
-      this.placementMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-      if (this.baseMesh) {
-        // Get camera direction vector
-        const cameraPos = this.camera.position.clone();
-        const baseBox = new THREE.Box3().setFromObject(this.baseMesh);
-        const baseCenter = baseBox.getCenter(new THREE.Vector3());
-
-        // Direction from center to camera
-        const toCameraDir = new THREE.Vector3().subVectors(cameraPos, baseCenter).normalize();
-
-        // Use raycaster to find visible surface
-        const raycaster = new THREE.Raycaster();
-        // Start from slightly outside camera view in direction of model
-        const rayOrigin = cameraPos.clone().sub(toCameraDir.multiplyScalar(2));
-
-        // Reset direction toward model
-        const rayDirection = new THREE.Vector3().subVectors(baseCenter, rayOrigin).normalize();
-
-        // Cast ray
-        raycaster.set(rayOrigin, rayDirection);
-        const intersects = raycaster.intersectObject(this.baseMesh, true);
-
-        if (intersects.length > 0) {
-          // Place at intersection point (on visible surface)
-          this.placementMesh.position.copy(intersects[0].point);
-
-          // Get normal at intersection point
-          if (intersects[0].face) {
-            const normal = intersects[0].face.normal.clone();
-
-            // Convert to world space
-            if (intersects[0].object.parent) {
-              const normalMatrix = new THREE.Matrix3().getNormalMatrix(
-                intersects[0].object.matrixWorld
-              );
-              normal.applyMatrix3(normalMatrix).normalize();
-            }
-
-            // Orient horn along normal direction
-            const upVector = new THREE.Vector3(0, 1, 0);
-            const quaternion = new THREE.Quaternion();
-            quaternion.setFromUnitVectors(upVector, normal);
-            this.placementMesh.quaternion.copy(quaternion);
-          }
-
-          // Add small offset to prevent z-fighting
-          const normalOffset = intersects[0].face?.normal.clone() || new THREE.Vector3(0, 1, 0);
-          if (intersects[0].object.parent) {
-            const normalMatrix = new THREE.Matrix3().getNormalMatrix(
-              intersects[0].object.matrixWorld
-            );
-            normalOffset.applyMatrix3(normalMatrix).normalize();
-          }
-
-          // Move slightly along normal to ensure it's on surface
-          this.placementMesh.position.add(normalOffset.multiplyScalar(0.01));
-        } else {
-          // Fallback to camera-facing side
-          const side = Math.sign(cameraPos.x - baseCenter.x);
-          this.placementMesh.position.set(
-            baseBox.max.x * side,
-            baseCenter.y,
-            baseCenter.z
-          );
-        }
-
-        // Attach to transform controls
-        this.transformControls.attach(this.placementMesh);
-        this.transformControls.setMode('translate');
-
-        // Store valid state
-        this.lastValidTransform.position.copy(this.placementMesh.position);
-        this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
-        this.lastValidTransform.scale.copy(this.placementMesh.scale);
-      }
-
-      // Force render update
-      this.renderer.render(this.scene, this.camera);
-    }, undefined, (error) => {
-      console.error('Error loading unicorn horn:', error);
-    });
+    const initialModel = this.availableModels.find(model => model.id === 'unicornHorn');
+    if (initialModel) {
+      this.loadModel(initialModel.path);
+    }
   }
+
 
   // Add a dedicated method for placing the horn on a surface
   private placeHornOnSurface(): void {
@@ -1278,46 +1172,19 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
   }
 
   // Method to update the bounding box based on button locations
+  // Disable the bounding box visualization functionality
   private updateBaseMeshBoundingBox(): void {
-    this.clearBoundingBoxHelpers();
-
-    if (!this.baseMesh) {
-      this.baseMeshBoundingBox = null;
-      if (this.boundingBoxHelper) {
-        this.scene.remove(this.boundingBoxHelper);
-        this.boundingBoxHelper = undefined;
-      }
-      return;
-    }
+    // Don't create any bounding box visualization
+    // Just calculate the base mesh bounding box for internal use
+    if (!this.baseMesh) return;
 
     // Calculate base mesh bounding box
     const rawBox = new THREE.Box3().setFromObject(this.baseMesh);
     const center = rawBox.getCenter(new THREE.Vector3());
     const size = rawBox.getSize(new THREE.Vector3());
 
-    // Create placement zones for all sides of the object
-    this.createAllSidePlacementZones(rawBox, size, center);
-
-    // If there are no exclusion zones yet, create default ones
-    // (assuming buttons are on top surface)
-    if (this.buttonExclusionZones.length === 0) {
-      // Create a default exclusion zone for the top buttons area
-      const buttonHeight = size.y * 0.3; // Top 30% is button area
-      const buttonZone = new THREE.Box3(
-        new THREE.Vector3(
-          rawBox.min.x,
-          rawBox.max.y - buttonHeight,
-          rawBox.min.z
-        ),
-        new THREE.Vector3(
-          rawBox.max.x,
-          rawBox.max.y,
-          rawBox.max.z
-        )
-      );
-      this.buttonExclusionZones.push(buttonZone);
-      this.visualizeExclusionZone(buttonZone);
-    }
+    // Store for internal use (without visualizing)
+    this.baseMeshBoundingBox = rawBox;
   }
 
   // Method to add additional placement zones on the sides
@@ -1429,6 +1296,24 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
     this.validPlacementZones.push(new THREE.Box3(min, max));
   }
 
+// Add a new method to place horn on top
+  private placeHornOnTop(): void {
+    if (!this.baseMesh || !this.placementMesh) return;
+
+    // Get base model bounding box
+    const baseBox = new THREE.Box3().setFromObject(this.baseMesh);
+
+    // Position at top center
+    this.placementMesh.position.set(
+      baseBox.getCenter(new THREE.Vector3()).x,
+      baseBox.max.y,  // Top of the box
+      baseBox.getCenter(new THREE.Vector3()).z
+    );
+
+    // Reset rotation to default upright position
+    this.placementMesh.rotation.set(0, 0, 0);
+  }
+
 
   private isPlacementWithinBaseBounds(): boolean {
     if (!this.placementMesh) return false;
@@ -1455,20 +1340,13 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
     return this.validPlacementZones.length === 0;
   }
 
-  private validatePlacementPosition() {
-    if(!this.placementMesh) return;
+  private validatePlacementPosition(): void {
+    if (!this.placementMesh) return;
 
-    if(this.isPlacementWithinBaseBounds()) {
-      // Save the current valid transform
-      this.lastValidTransform.position.copy(this.placementMesh.position);
-      this.lastValidTransform.scale.copy(this.placementMesh.scale);
-      this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
-    } else {
-      // Reset to last valid position
-      this.placementMesh.position.copy(this.lastValidTransform.position);
-      this.placementMesh.scale.copy(this.lastValidTransform.scale);
-      this.placementMesh.rotation.copy(this.lastValidTransform.rotation);
-    }
+    // Store current position as valid without any validation
+    this.lastValidTransform.position.copy(this.placementMesh.position);
+    this.lastValidTransform.scale.copy(this.placementMesh.scale);
+    this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
   }
 
   private isPlacementValid(position: THREE.Vector3): boolean {
@@ -1509,25 +1387,8 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
   }
 
   toggleBoundingBoxVisibility(): void {
-    if (this.boundingBoxHelper) {
-      const visible = !this.boundingBoxHelper.visible;
-
-      // Toggle main bounding box
-      this.boundingBoxHelper.visible = visible;
-
-      // Toggle all additional bounding boxes
-      if (this.boundingBoxHelpers) {
-        this.boundingBoxHelpers.forEach(helper => {
-          helper.visible = visible;
-        });
-      }
-
-      // Force a render
-      this.renderer.render(this.scene, this.camera);
-    } else {
-      // If no box exists, create one
-      this.updateBaseMeshBoundingBox();
-    }
+    // No-op - we don't want to show bounding boxes
+    return;
   }
 
 
@@ -1599,10 +1460,6 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
     const intersects = this.raycaster.intersectObject(this.baseMesh, true);
 
     if (intersects.length > 0) {
-      // Store previous position and rotation for reverting if needed
-      const oldPosition = this.placementMesh.position.clone();
-      const oldQuaternion = this.placementMesh.quaternion.clone();
-
       // Get intersection point and normal
       const intersectPoint = intersects[0].point;
       const normal = intersects[0].face?.normal.clone() || new THREE.Vector3(0, 1, 0);
@@ -1616,7 +1473,7 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
           normal.applyMatrix3(normalMatrix).normalize();
         }
 
-        // Calculate position on the surface with offset
+        // Calculate position on the surface with slight offset
         const surfacePoint = intersectPoint.clone().add(normal.clone().multiplyScalar(0.05));
 
         // Create rotation to align with surface normal
@@ -1628,17 +1485,10 @@ export class ThreeWithUploadComponent implements OnInit, OnChanges {
         this.placementMesh.position.copy(surfacePoint);
         this.placementMesh.quaternion.copy(alignQuaternion);
 
-        // Check if this placement intersects with a button exclusion zone
-        if (this.isInExclusionZone(this.placementMesh)) {
-          // Reset to previous position if in exclusion zone
-          this.placementMesh.position.copy(oldPosition);
-          this.placementMesh.quaternion.copy(oldQuaternion);
-        } else {
-          // Update last valid transform
-          this.lastValidTransform.position.copy(this.placementMesh.position);
-          this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
-          this.lastValidTransform.scale.copy(this.placementMesh.scale);
-        }
+        // Update last valid transform
+        this.lastValidTransform.position.copy(this.placementMesh.position);
+        this.lastValidTransform.rotation.copy(this.placementMesh.rotation);
+        this.lastValidTransform.scale.copy(this.placementMesh.scale);
       }
     }
   }

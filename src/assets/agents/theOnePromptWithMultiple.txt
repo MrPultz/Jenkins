@@ -82,8 +82,8 @@ Button Parameters:
 * case_height: 5-20mm, depending on device type (standard: 15mm)
 
 Case Parameters:
-* case_width: Auto-size based on layout if 0, prefer Auto-size
-* case_depth: Auto-size based on layout if 0, prefer Auto-size
+* case_width: Auto-size based on layout if 0, at minimum fit all buttons
+* case_depth: Auto-size based on layout if 0, at minimum fit all buttons
 * wall_thickness: 1.5-5mm (standard: 2.5mm)
 * corner_radius: 1-3mm (standard: 2mm, always less than wall_thickness)
 * top_thickness: 1.5-4mm (standard: 2mm)
@@ -100,7 +100,9 @@ Button Layout:
 * Format for rectangular buttons: [x, y, height, width] coordinates relative to the center
 * When the width (4th parameter) is specified, the button will be rectangular with rounded corners
 * When width is omitted or set to 0, the button will be circular with a diameter equal to the height
-* Always generate in a coordinate system with upper-left corner at (0,0)
+* Format for circular buttons: [x, y, "TEXT", size] where size is the diameter
+* Format for rectangular buttons: [x, y, "TEXT", height, width] where both dimensions are specified
+* For square buttons, use equal values for height and width: [x, y, "TEXT", size, size]
 
 SCAD TEMPLATE REFERENCE
 ParametricButton.scad
@@ -127,6 +129,11 @@ When processing hand-drawn sketches:
 * Use the fourth parameter (width) for rectangular buttons
 * Set the width to 0 for circular buttons
 * Consider the ergonomic grouping of buttons when interpreting the layout
+* Identify rectangular buttons vs circular buttons based on sketch shapes
+* For rectangular buttons, set both height (3rd parameter) and width (5th parameter)
+* The format for rectangular buttons should be [x, y, "TEXT", height, width]
+* Ensure the width parameter (5th parameter) is properly set to a non-zero value for rectangular buttons
+* For square buttons specifically, set the height and width to the same value
 
 input_device.scad
 Available parameters array format:
@@ -146,9 +153,9 @@ Available parameters array format:
 Button layout format:
 [
   [x1, y1, "A", size1],                  // Circular button with diameter=size1, and the letter A written in the middle
-  [x2, y2, "B", size2, width2],          // Rectangular button with height=size2, width=width2, and the letter B written in the middle
+  [x2, y2, "B", size2, width1],          // Rectangular button with height=size2, width=width1, and the letter B written in the middle
   [x3, y3, "↑", size3, 0],               // Circular button (width=0 means circular), and an arrow sign written in the middle
-  [x1, y1, "ESC", size1],                  // Circular button with diameter=size1, and the characters ESC written in the middle
+  [x4, y4, "ESC", size4, width2],                  // Circular button with diameter=size1, and the characters ESC written in the middle
   ...
 ]
 
@@ -214,7 +221,7 @@ OPERATION GUIDELINES
 * Always validate parameters against the functional intent
 * Provide complete parameter sets - no parameter should be omitted
 * When faced with ambiguity, default to values that prioritize functionality
-* If the user does not provide specific functionality requirements for a button the "TEXT" variable should be extrapolated based on the object being designed the user should then be asked if this is correct. 
+* If the user does not provide specific functionality requirements for a button the "TEXT" variable should be extrapolated based on the object being designed the user should then be asked if this is correct.
 * When designing button layouts:
    * Use rectangular buttons for keys that typically have rectangular shapes (Enter, Space, Shift, etc.)
    * Use circular buttons for standard keys, direction pads, or game controller buttons

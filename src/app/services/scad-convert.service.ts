@@ -15,14 +15,12 @@ export class ScadConvertService {
 
   convertToScad(components: any[], buttonParams ?: any): Observable<Blob> {
     // Convert component data to button_layout format
+    console.log('Components:', components);
+
     const buttonLayout = this.formatButtonLayout(components);
-    let scadCommand = `button_layout=${JSON.stringify(buttonLayout)}`;
 
-    // Declare paramsArray outside the if block so it's available in the full method scope
+    // Prepare buttonParams array if provided
     let paramsArray = null;
-
-    console.log('SCAD Command:', scadCommand);
-
     if (buttonParams) {
       paramsArray = [
         buttonParams.case_width || 0,
@@ -36,26 +34,32 @@ export class ScadConvertService {
         buttonParams.lip_clearance || 0.1,
         buttonParams.case_height || 15
       ];
-
-      scadCommand += `; button_params=${JSON.stringify(paramsArray)}`;
     }
 
-    console.log('SCAD Command:', scadCommand);
-    // Send to backend
-    return this.http.post(`${this.apiURL}convert-to-scad`,
-      { scadCommand, buttonLayout, buttonParams: paramsArray },
+    console.log('Button Layout:', buttonLayout);
+    console.log('Button Params:', paramsArray);
+
+    // Send to backend using the new endpoint and expected format
+    return this.http.post(`${this.apiURL}generate-stl`,
+      {
+        designId: 'direct',
+        buttonLayout: buttonLayout,
+        buttonParams: paramsArray
+      },
       { responseType: 'blob' }
     );
   }
 
-  private formatButtonLayout(components: any[]): number[][] {
+  private formatButtonLayout(components: any[]): any[][] {
     // Filter only button components
     const buttons = components.filter(comp => comp.type === 'button');
+    console.log("buttons", buttons);
 
-    // Extract x, y, size values into 2D array format
+    // Extract x, y, text, size, width values into array format
     return buttons.map(button => [
       button.x || 0,
       button.y || 0,
+      button.text || "BTN", // Adding text parameter for the button
       button.size || 0,
       button.width || 0
     ]);
