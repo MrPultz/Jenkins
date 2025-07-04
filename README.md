@@ -1,27 +1,49 @@
-# DeepPrinting
+# Installation Guide
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.8.
+## Prerequisites
 
-## Development server
+- [Node.js](https://nodejs.org/) (LTS version recommended)
+- [Angular CLI](https://angular.io/cli)
+- Git
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+## Setup Instructions
 
-## Code scaffolding
+### 1. Clone the Repository
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```bash
+git clone https://github.com/MrPultz/Jenkins.git
+cd Jenkins
+```
+### 2. Install Dependencies
+```bash
+npm install
+```
 
-## Build
+### 3 Development server
+start the development server:
+```bash
+ng serve
+```
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+### Claude API key setup.
+Create a claude.ts file in src/environments/claude.ts and add your
+Claude API key:
+```typescript
+export const claude = {
+  production: false,
+  apiKey: 'key here...',
+  apiUrl: 'https://api.anthropic.com/v1/messages',
+};
+```
+### Update Claude version
+to update claude from 3.7 or what version come look up the verison on their documentation and change it in src/services/anthropic-chat-agent.service.ts
+```typescript
+ const response = await this.anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219', <-- CHANGE THIS TO LATEST VERSION
+        max_tokens: 4000,
+        temperature: 0,
+        system: this.systemPromptContent,
+        messages: this.messages
+      });
+```
 
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
